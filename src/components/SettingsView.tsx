@@ -1,0 +1,390 @@
+import React, { useState } from 'react';
+import { RewardTier, PointsRuleConfig, AppState } from '../types';
+import { 
+  Settings, 
+  Gift, 
+  Sparkles, 
+  Plus, 
+  Trash2, 
+  Save, 
+  RotateCcw, 
+  Check, 
+  Church, 
+  Flame, 
+  Award, 
+  AlertTriangle 
+} from 'lucide-react';
+
+interface SettingsViewProps {
+  rewardTiers: RewardTier[];
+  pointsRules: PointsRuleConfig;
+  churchName: string;
+  serviceName: string;
+  onUpdateRewardTiers: (tiers: RewardTier[]) => void;
+  onUpdatePointsRules: (rules: PointsRuleConfig) => void;
+  onUpdateChurchDetails: (churchName: string, serviceName: string) => void;
+  onResetDefaults: () => void;
+}
+
+export const SettingsView: React.FC<SettingsViewProps> = ({
+  rewardTiers,
+  pointsRules,
+  churchName,
+  serviceName,
+  onUpdateRewardTiers,
+  onUpdatePointsRules,
+  onUpdateChurchDetails,
+  onResetDefaults,
+}) => {
+  // Local editable copies
+  const [localTiers, setLocalTiers] = useState<RewardTier[]>(rewardTiers);
+  const [localRules, setLocalRules] = useState<PointsRuleConfig>(pointsRules);
+  const [localChurch, setLocalChurch] = useState(churchName);
+  const [localService, setLocalService] = useState(serviceName);
+  const [savedSuccessMessage, setSavedSuccessMessage] = useState(false);
+
+  const handleSaveAll = () => {
+    onUpdateRewardTiers(localTiers);
+    onUpdatePointsRules(localRules);
+    onUpdateChurchDetails(localChurch, localService);
+    setSavedSuccessMessage(true);
+    setTimeout(() => setSavedSuccessMessage(false), 3000);
+  };
+
+  const handleTierChange = (index: number, field: keyof RewardTier, value: any) => {
+    const updated = [...localTiers];
+    updated[index] = {
+      ...updated[index],
+      [field]: value,
+    };
+    setLocalTiers(updated);
+  };
+
+  const handleAddNewTier = () => {
+    const nextStreak = localTiers.length > 0 ? Math.max(...localTiers.map((t) => t.requiredStreak)) + 4 : 4;
+    const newTier: RewardTier = {
+      id: `tier-${Date.now()}`,
+      requiredStreak: nextStreak,
+      title: `مكافأة تتابع ${nextStreak} مرات`,
+      defaultGiftName: 'هدية تشجيعية مميزة',
+      description: `مكافأة الالتزام لـ ${nextStreak} مرات متتالية`,
+      badgeColor: 'amber',
+      icon: 'Gift',
+      bonusPointsReward: 30,
+      enabled: true,
+    };
+    setLocalTiers([...localTiers, newTier]);
+  };
+
+  const handleDeleteTier = (index: number) => {
+    if (localTiers.length <= 1) {
+      alert('يجب الإبقاء على مستوى مكافأة واحد على الأقل.');
+      return;
+    }
+    setLocalTiers(localTiers.filter((_, i) => i !== index));
+  };
+
+  return (
+    <div className="space-y-6 max-w-5xl mx-auto">
+      {/* Top Banner */}
+      <div className="bg-white rounded-3xl border border-slate-200/80 shadow-sm p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h2 className="text-xl font-black text-slate-900 flex items-center gap-2">
+            <Settings className="w-6 h-6 text-amber-600" />
+            <span>لوحة التحكم وتعديل قواعد الهدايا والنقاط</span>
+          </h2>
+          <p className="text-xs text-slate-500 mt-1">
+            خصص عدد مرات الحضور المطلوبة لكل هدية، نقاط الأنشطة الكنسية، ونظام التقييم بحرية تامة.
+          </p>
+        </div>
+
+        <button
+          onClick={handleSaveAll}
+          className="flex items-center gap-2 px-6 py-2.5 bg-amber-500 hover:bg-amber-400 text-stone-950 font-black rounded-2xl transition shadow-md shadow-amber-500/20 active:scale-95 shrink-0"
+        >
+          {savedSuccessMessage ? <Check className="w-5 h-5 text-emerald-950" /> : <Save className="w-5 h-5" />}
+          <span>{savedSuccessMessage ? 'تم الحفظ بنجاح!' : 'حفظ التعديلات'}</span>
+        </button>
+      </div>
+
+      {savedSuccessMessage && (
+        <div className="p-3 bg-emerald-100 border border-emerald-300 text-emerald-900 text-xs font-bold rounded-2xl flex items-center gap-2 animate-bounce">
+          <Check className="w-4 h-4" />
+          <span>تم تطبيق وحفظ كافة القواعد الجديدة بنجاح في قاعدة البيانات.</span>
+        </div>
+      )}
+
+      {/* 1. STREAK REWARDS RULES SECTION */}
+      <div className="bg-white rounded-3xl border border-slate-200/80 shadow-sm p-6 space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-slate-100">
+          <div>
+            <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+              <Flame className="w-5 h-5 text-amber-500" />
+              <span>مستويات مكافآت التتابع (عدد مرات الحضور المتتالية)</span>
+            </h3>
+            <p className="text-xs text-slate-500 mt-0.5">
+              يمكنك تعديل عدد الأسابيع المطلوبة (مثلاً 4 أو 8 أو 10 مرات)، وتغيير اسم ومحتوى الهدية.
+            </p>
+          </div>
+
+          <button
+            onClick={handleAddNewTier}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl transition border border-slate-200 self-start sm:self-auto"
+          >
+            <Plus className="w-4 h-4" />
+            <span>إضافة مستوى مكافأة جديد</span>
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          {localTiers.map((tier, index) => (
+            <div
+              key={tier.id}
+              className="p-4 sm:p-5 rounded-2xl border border-slate-200 bg-slate-50/50 space-y-4 hover:border-amber-300 transition"
+            >
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-xs font-black text-amber-900 bg-amber-100 px-3 py-1 rounded-full border border-amber-300">
+                  المستوى رقم {index + 1}
+                </span>
+
+                <div className="flex items-center gap-2">
+                  <label className="flex items-center gap-1.5 text-xs font-bold text-slate-600 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={tier.enabled}
+                      onChange={(e) => handleTierChange(index, 'enabled', e.target.checked)}
+                      className="rounded text-amber-600 focus:ring-amber-500"
+                    />
+                    <span>مفعّل</span>
+                  </label>
+
+                  <button
+                    onClick={() => handleDeleteTier(index)}
+                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                    title="حذف هذا المستوى"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    عدد مرات الحضور المتتالية (التتابع)
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="52"
+                    value={tier.requiredStreak}
+                    onChange={(e) => handleTierChange(index, 'requiredStreak', parseInt(e.target.value) || 1)}
+                    className="w-full px-3 py-2 text-sm font-bold bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500"
+                  />
+                  <span className="text-[10px] text-slate-400 mt-0.5 block">مثال: 4 مرات، 8 مرات، 10 مرات</span>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    عنوان المستوى
+                  </label>
+                  <input
+                    type="text"
+                    value={tier.title}
+                    onChange={(e) => handleTierChange(index, 'title', e.target.value)}
+                    className="w-full px-3 py-2 text-sm font-bold bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500"
+                    placeholder="مثال: هدية صغيرة (التزام 4 مرات)"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    نقاط بونص تمنح مع الهدية
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={tier.bonusPointsReward}
+                    onChange={(e) => handleTierChange(index, 'bonusPointsReward', parseInt(e.target.value) || 0)}
+                    className="w-full px-3 py-2 text-sm font-bold bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  الهدية المقترحة / الوصف
+                </label>
+                <input
+                  type="text"
+                  value={tier.defaultGiftName}
+                  onChange={(e) => handleTierChange(index, 'defaultGiftName', e.target.value)}
+                  className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500"
+                  placeholder="مثال: ميدالية ومفكرة روحيّة / باور بانك / تي شيرت الخدمة"
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 2. POINTS EVALUATION SYSTEM */}
+      <div className="bg-white rounded-3xl border border-slate-200/80 shadow-sm p-6 space-y-5">
+        <div>
+          <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+            <Award className="w-5 h-5 text-purple-600" />
+            <span>نظام تقييم النقاط في كل اجتماع (البونص والالتزام)</span>
+          </h3>
+          <p className="text-xs text-slate-500 mt-0.5">
+            حدد عدد النقاط الممنوحة لكل نشاط كنسي عند تسجيل حضور المخدوم في الاجتماع.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1.5">
+            <label className="block text-xs font-bold text-slate-700">
+              الحضور الأساسي للاجتماع
+            </label>
+            <input
+              type="number"
+              min="0"
+              value={localRules.attendanceBase}
+              onChange={(e) => setLocalRules({ ...localRules, attendanceBase: parseInt(e.target.value) || 0 })}
+              className="w-full px-3 py-2 text-sm font-black bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500"
+            />
+            <p className="text-[11px] text-slate-400">تمنح تلقائياً عند تسجيل المخدوم كـ "حاضر".</p>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-purple-50/50 border border-purple-200 space-y-1.5">
+            <label className="block text-xs font-bold text-purple-900">
+              حضور القداس الإلهي
+            </label>
+            <input
+              type="number"
+              min="0"
+              value={localRules.liturgy}
+              onChange={(e) => setLocalRules({ ...localRules, liturgy: parseInt(e.target.value) || 0 })}
+              className="w-full px-3 py-2 text-sm font-black bg-white border border-purple-300 rounded-xl focus:ring-2 focus:ring-purple-500"
+            />
+            <p className="text-[11px] text-purple-700/80">تشجيع حضور القداس والتناول.</p>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-blue-50/50 border border-blue-200 space-y-1.5">
+            <label className="block text-xs font-bold text-blue-900">
+              حفظ الآية الأسبوعية
+            </label>
+            <input
+              type="number"
+              min="0"
+              value={localRules.verse}
+              onChange={(e) => setLocalRules({ ...localRules, verse: parseInt(e.target.value) || 0 })}
+              className="w-full px-3 py-2 text-sm font-black bg-white border border-blue-300 rounded-xl focus:ring-2 focus:ring-blue-500"
+            />
+            <p className="text-[11px] text-blue-700/80">تمنح عند تسميع آية الدرس للخادم.</p>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-emerald-50/50 border border-emerald-200 space-y-1.5">
+            <label className="block text-xs font-bold text-emerald-900">
+              الالتزام في الصلاة
+            </label>
+            <input
+              type="number"
+              min="0"
+              value={localRules.prayer}
+              onChange={(e) => setLocalRules({ ...localRules, prayer: parseInt(e.target.value) || 0 })}
+              className="w-full px-3 py-2 text-sm font-black bg-white border border-emerald-300 rounded-xl focus:ring-2 focus:ring-emerald-500"
+            />
+            <p className="text-[11px] text-emerald-700/80">الخشوع والوقوف بوقار أثناء صلاة الاجتماع.</p>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-amber-50/50 border border-amber-200 space-y-1.5">
+            <label className="block text-xs font-bold text-amber-900">
+              المشاركة والتفاعل الفعّال
+            </label>
+            <input
+              type="number"
+              min="0"
+              value={localRules.participation}
+              onChange={(e) => setLocalRules({ ...localRules, participation: parseInt(e.target.value) || 0 })}
+              className="w-full px-3 py-2 text-sm font-black bg-white border border-amber-300 rounded-xl focus:ring-2 focus:ring-amber-500"
+            />
+            <p className="text-[11px] text-amber-700/80">التفاعل في الدرس والإجابة على الأسئلة.</p>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col justify-between">
+            <div>
+              <label className="block text-xs font-bold text-slate-800 mb-1">
+                قاعدة الاعتذار المسبق والتتابع
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer mt-2 text-xs font-semibold text-slate-700">
+                <input
+                  type="checkbox"
+                  checked={localRules.streakPreserveOnExcuse}
+                  onChange={(e) => setLocalRules({ ...localRules, streakPreserveOnExcuse: e.target.checked })}
+                  className="rounded text-amber-600 focus:ring-amber-500 w-4 h-4"
+                />
+                <span>الاعتذار المسبق يحفظ تتابع الحضور ولا يصفّره</span>
+              </label>
+            </div>
+            <p className="text-[10px] text-slate-400 mt-2">
+              (إذا تم التعطيل، فإن الاعتذار مثل الغياب سيبدأ التتابع من جديد).
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* 3. CHURCH & SERVICE BRANDING */}
+      <div className="bg-white rounded-3xl border border-slate-200/80 shadow-sm p-6 space-y-4">
+        <div>
+          <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+            <Church className="w-5 h-5 text-amber-600" />
+            <span>بيانات الكنيسة والخدمة</span>
+          </h3>
+          <p className="text-xs text-slate-500 mt-0.5">تظهر في أعلى الصفحة والتقارير المطبوعة.</p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1">اسم الكنيسة</label>
+            <input
+              type="text"
+              value={localChurch}
+              onChange={(e) => setLocalChurch(e.target.value)}
+              className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1">اسم الخدمة والمرحلة</label>
+            <input
+              type="text"
+              value={localService}
+              onChange={(e) => setLocalService(e.target.value)}
+              className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* 4. ACTIONS & RESET */}
+      <div className="p-5 rounded-3xl bg-slate-100 border border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex items-center gap-2 text-xs text-slate-600">
+          <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+          <span>إعادة ضبط قواعد الهدايا والنقاط للقيم الأصلية مع الحفاظ على النظام نظيفاً بدون ديمو.</span>
+        </div>
+
+        <button
+          onClick={() => {
+            if (window.confirm('هل أنت متأكد من استعادة القواعد الافتراضية للخدمة؟')) {
+              onResetDefaults();
+            }
+          }}
+          className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-rose-700 hover:bg-rose-100/80 rounded-xl transition self-start sm:self-auto border border-rose-200 bg-white cursor-pointer"
+        >
+          <RotateCcw className="w-3.5 h-3.5" />
+          <span>استعادة القواعد الافتراضية للخدمة</span>
+        </button>
+      </div>
+    </div>
+  );
+};

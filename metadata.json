@@ -1,0 +1,6 @@
+{
+  "name": "منصة خدمة إعدادي - الحضور ونظام المكافآت",
+  "description": "منظومة كنسية ذكية لإدارة مخدومي إعدادي، تسجيل الحضور والغياب، حساب التتابع، النقاط التشجيعية، وجوائز الالتزام القابلة للتخصيص بالكامل.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
