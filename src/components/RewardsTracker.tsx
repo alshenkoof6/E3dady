@@ -31,6 +31,8 @@ interface RewardsTrackerProps {
   pointsRules: PointsRuleConfig;
   rewardTiers: RewardTier[];
   competitionLogs: CompetitionLog[];
+  isServant?: boolean;
+  onOpenLogin?: () => void;
   onDeliverReward: (student: Student, tier: RewardTier) => void;
   onRevokeReward?: (studentId: string, rewardClaimId: string) => void;
 }
@@ -41,6 +43,8 @@ export const RewardsTracker: React.FC<RewardsTrackerProps> = ({
   pointsRules,
   rewardTiers,
   competitionLogs,
+  isServant = false,
+  onOpenLogin,
   onDeliverReward,
   onRevokeReward,
 }) => {
@@ -323,13 +327,19 @@ export const RewardsTracker: React.FC<RewardsTrackerProps> = ({
                       +{tier.bonusPointsReward} نقطة بونص عند التسليم
                     </span>
 
-                    <button
-                      onClick={() => onDeliverReward(student, tier)}
-                      className="px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-stone-950 font-black text-xs rounded-xl shadow-md transition active:scale-95 flex items-center gap-1.5"
-                    >
-                      <Gift className="w-4 h-4" />
-                      <span>تسليم الهدية الآن 🎁</span>
-                    </button>
+                    {isServant ? (
+                      <button
+                        onClick={() => onDeliverReward(student, tier)}
+                        className="px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-stone-950 font-black text-xs rounded-xl shadow-md transition active:scale-95 flex items-center gap-1.5"
+                      >
+                        <Gift className="w-4 h-4" />
+                        <span>تسليم الهدية الآن 🎁</span>
+                      </button>
+                    ) : (
+                      <span className="text-xs font-bold text-amber-800 bg-amber-100/80 px-3 py-1.5 rounded-xl border border-amber-200">
+                        بانتظار تسليم الخادم المسؤول 🎁
+                      </span>
+                    )}
                   </div>
                 </div>
               ))}
@@ -446,7 +456,7 @@ export const RewardsTracker: React.FC<RewardsTrackerProps> = ({
                       <span>{claim.date}</span>
                     </span>
 
-                    {onRevokeReward && (
+                    {isServant && onRevokeReward && (
                       <button
                         onClick={() => onRevokeReward(student.id, claim.id)}
                         className="text-rose-600 hover:text-rose-800 text-[11px] font-bold underline transition"

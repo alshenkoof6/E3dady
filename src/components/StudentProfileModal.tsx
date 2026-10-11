@@ -33,6 +33,7 @@ interface StudentProfileModalProps {
   pointsRules: PointsRuleConfig;
   rewardTiers: RewardTier[];
   competitionLogs: CompetitionLog[];
+  isServant?: boolean;
   onClose: () => void;
   onEditStudent: (student: Student) => void;
 }
@@ -43,6 +44,7 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
   pointsRules,
   rewardTiers,
   competitionLogs,
+  isServant = false,
   onClose,
   onEditStudent,
 }) => {
@@ -135,15 +137,17 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
                 </a>
               </>
             )}
-            <button
-              onClick={() => {
-                onClose();
-                onEditStudent(student);
-              }}
-              className="px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-950 text-xs font-bold rounded-xl transition border border-amber-300"
-            >
-              تعديل
-            </button>
+            {isServant && (
+              <button
+                onClick={() => {
+                  onClose();
+                  onEditStudent(student);
+                }}
+                className="px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-950 text-xs font-bold rounded-xl transition border border-amber-300"
+              >
+                تعديل
+              </button>
+            )}
           </div>
         </div>
 

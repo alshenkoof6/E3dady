@@ -49,7 +49,12 @@ export function loadAppState(): AppState {
       rewardTiers: Array.isArray(parsed.rewardTiers) ? parsed.rewardTiers : initialAppState.rewardTiers,
       pointsRules: parsed.pointsRules || initialAppState.pointsRules,
       competitionLogs: Array.isArray(parsed.competitionLogs) ? parsed.competitionLogs : initialAppState.competitionLogs,
-      servants: Array.isArray(parsed.servants) && parsed.servants.length > 0 ? parsed.servants : initialAppState.servants,
+      servants: Array.isArray(parsed.servants) && parsed.servants.length > 0 
+        ? parsed.servants.map((srv: any) => ({
+            ...srv,
+            password: (!srv.password || srv.password === '123' || srv.password === '1234') ? 'sedoud123' : srv.password
+          }))
+        : initialAppState.servants,
     };
   } catch (error) {
     console.error('Error reading localStorage:', error);

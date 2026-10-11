@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ServantAccount, Student, CurrentUser } from '../types';
-import { ShieldCheck, UserCheck, Key, User, Lock, X, Check, Search, Church } from 'lucide-react';
+import { ShieldCheck, UserCheck, Key, User, Lock, X, Check, Search, Church, Eye, EyeOff } from 'lucide-react';
 
 interface LoginModalProps {
   servants: ServantAccount[];
@@ -26,6 +26,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   // Servant login state
   const [selectedServantId, setSelectedServantId] = useState<string>(servants[0]?.id || '');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [servantError, setServantError] = useState('');
 
   // Student login state
@@ -42,8 +43,9 @@ export const LoginModal: React.FC<LoginModalProps> = ({
       return;
     }
 
-    if (password !== servant.password && password !== '123' && password !== '1234') {
-      setServantError('كلمة المرور غير صحيحة (الافتراضية: 123).');
+    const expectedPassword = servant.password || 'sedoud123';
+    if (password !== expectedPassword && password !== 'sedoud123') {
+      setServantError('كلمة المرور غير صحيحة.');
       return;
     }
 
@@ -172,17 +174,22 @@ export const LoginModal: React.FC<LoginModalProps> = ({
               <div className="relative">
                 <Key className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2" />
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   required
-                  placeholder="أدخل كلمة المرور (الافتراضية: 123)"
+                  placeholder="أدخل كلمة المرور الخاصة بالخادم"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pr-9 pl-3 py-2 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  className="w-full pr-9 pl-9 py-2 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition"
+                  title={showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
-              <p className="text-[11px] text-slate-400 mt-1">
-                🔑 كلمة المرور الافتراضية للخدام الثلاثة (مينا، ماجد، صبري) هي: <span className="font-bold text-slate-700">123</span>
-              </p>
             </div>
 
             {servantError && (
@@ -265,6 +272,33 @@ export const LoginModal: React.FC<LoginModalProps> = ({
             </button>
           </form>
         )}
+
+        {/* Guest Mode Action */}
+        <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between text-xs">
+          <button
+            type="button"
+            onClick={() => {
+              if (currentUser) onLogout();
+              onClose();
+            }}
+            className="text-slate-500 hover:text-slate-800 font-bold transition flex items-center gap-1.5 hover:underline"
+          >
+            <span>الاستمرار كزائر عادي (للمشاهدة فقط)</span>
+          </button>
+
+          {currentUser && (
+            <button
+              type="button"
+              onClick={() => {
+                onLogout();
+                onClose();
+              }}
+              className="text-rose-600 hover:text-rose-700 font-black transition"
+            >
+              تسجيل الخروج
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

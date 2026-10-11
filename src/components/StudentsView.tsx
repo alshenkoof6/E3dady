@@ -34,6 +34,8 @@ interface StudentsViewProps {
   pointsRules: PointsRuleConfig;
   rewardTiers: RewardTier[];
   competitionLogs: CompetitionLog[];
+  isServant?: boolean;
+  onOpenLogin?: () => void;
   onSelectStudent: (student: Student) => void;
   onOpenAddStudent: () => void;
   onOpenImportExport: () => void;
@@ -47,6 +49,8 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
   pointsRules,
   rewardTiers,
   competitionLogs,
+  isServant = false,
+  onOpenLogin,
   onSelectStudent,
   onOpenAddStudent,
   onOpenImportExport,
@@ -114,24 +118,33 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5">
-          <button
-            onClick={onOpenImportExport}
-            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl transition border border-slate-200 active:scale-95"
-            title="استيراد وتصدير داتا الأولاد بالكامل"
-          >
-            <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
-            <span>استيراد وتصدير داتا</span>
-          </button>
+        {isServant ? (
+          <div className="flex flex-wrap items-center gap-2.5">
+            <button
+              onClick={onOpenImportExport}
+              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl transition border border-slate-200 active:scale-95"
+              title="استيراد وتصدير داتا الأولاد بالكامل"
+            >
+              <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+              <span>استيراد وتصدير داتا</span>
+            </button>
 
+            <button
+              onClick={onOpenAddStudent}
+              className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold bg-amber-500 hover:bg-amber-400 text-stone-950 rounded-xl transition shadow-md active:scale-95"
+            >
+              <Plus className="w-4 h-4" />
+              <span>إضافة مخدوم جديد</span>
+            </button>
+          </div>
+        ) : onOpenLogin ? (
           <button
-            onClick={onOpenAddStudent}
-            className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold bg-amber-500 hover:bg-amber-400 text-stone-950 rounded-xl transition shadow-md active:scale-95"
+            onClick={onOpenLogin}
+            className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold bg-amber-500 hover:bg-amber-400 text-stone-950 rounded-xl transition shadow-sm active:scale-95"
           >
-            <Plus className="w-4 h-4" />
-            <span>إضافة مخدوم جديد</span>
+            <span>تسجيل دخول الخادم للإضافة والتعديل</span>
           </button>
-        </div>
+        ) : null}
       </div>
 
       {/* Filter and Search Bar */}
@@ -318,26 +331,28 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => onEditStudent(student)}
-                    className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition"
-                    title="تعديل البيانات"
-                  >
-                    <Edit3 className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (window.confirm(`هل أنت متأكد من حذف ${student.name} من الخدمة؟`)) {
-                        onDeleteStudent(student.id);
-                      }
-                    }}
-                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
-                    title="حذف المخدوم"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
+                {isServant && (
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => onEditStudent(student)}
+                      className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition"
+                      title="تعديل البيانات"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (window.confirm(`هل أنت متأكد من حذف ${student.name} من الخدمة؟`)) {
+                          onDeleteStudent(student.id);
+                        }
+                      }}
+                      className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                      title="حذف المخدوم"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Stats Bar */}

@@ -30,7 +30,9 @@ import {
   ChevronRight, 
   UserCheck,
   FileSpreadsheet,
-  Cake
+  Cake,
+  Lock,
+  ShieldCheck
 } from 'lucide-react';
 import { isBirthdayToday } from '../utils/birthday';
 
@@ -42,6 +44,8 @@ interface AttendanceViewProps {
   pointsRules: PointsRuleConfig;
   rewardTiers: RewardTier[];
   competitionLogs: CompetitionLog[];
+  isServant?: boolean;
+  onOpenLogin?: () => void;
   onSelectSession: (sessionId: string) => void;
   onUpdateSessionData: (sessionId: string, updates: Partial<ServiceSession>) => void;
   onUpdateStudentAttendance: (
@@ -73,6 +77,8 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
   pointsRules,
   rewardTiers,
   competitionLogs,
+  isServant = false,
+  onOpenLogin,
   onSelectSession,
   onUpdateSessionData,
   onUpdateStudentAttendance,
@@ -208,8 +214,71 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
     setNewGuestSpeakerName('');
   };
 
+  const handleProtectedAttendanceChange = (
+    studentId: string,
+    status: AttendanceStatus,
+    bonusUpdates?: {
+      prayer?: boolean;
+      liturgy?: boolean;
+      verse?: boolean;
+      participation?: boolean;
+      customPoints?: number;
+      customReason?: string;
+    },
+    notes?: string
+  ) => {
+    if (!isServant) {
+      onOpenLogin?.();
+      return;
+    }
+    if (activeSession) {
+      onUpdateStudentAttendance(activeSession.id, studentId, status, bonusUpdates, notes);
+    }
+  };
+
+  const handleProtectedBulkUpdate = (status: AttendanceStatus) => {
+    if (!isServant) {
+      onOpenLogin?.();
+      return;
+    }
+    if (activeSession) {
+      onBulkUpdateAttendance(activeSession.id, status);
+    }
+  };
+
   return (
     <div className="space-y-6">
+      {/* Visitor Read-Only Banner */}
+      {!isServant && (
+        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-300 rounded-3xl p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4 text-amber-950 shadow-xs">
+          <div className="flex items-center gap-3.5">
+            <div className="w-11 h-11 rounded-2xl bg-amber-500 text-stone-950 flex items-center justify-center shrink-0 shadow-sm">
+              <Lock className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h4 className="font-black text-sm text-slate-900">أنت تتصفح سجل الحضور كزائر (للمشاهدة فقط)</h4>
+                <span className="text-[10px] bg-amber-200/80 text-amber-900 border border-amber-300 px-2 py-0.5 rounded-full font-bold">
+                  للقراءة فقط
+                </span>
+              </div>
+              <p className="text-xs text-slate-600 mt-0.5">
+                يمكنك الاطلاع على نسب الحضور وسجل اللقاءات. لتسجيل الحضور، إضافة لقاء جديد، أو رصد الدرجات يرجى تسجيل دخول الخادم المسؤول.
+              </p>
+            </div>
+          </div>
+          {onOpenLogin && (
+            <button
+              onClick={onOpenLogin}
+              className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-stone-950 font-black text-xs rounded-xl shadow-md transition active:scale-95 flex items-center gap-1.5 shrink-0"
+            >
+              <ShieldCheck className="w-4 h-4" />
+              <span>تسجيل دخول الخادم للتعديل</span>
+            </button>
+          )}
+        </div>
+      )}
+
       {!activeSession ? (
         <div className="text-center py-16 bg-white rounded-3xl border border-slate-200 shadow-sm max-w-xl mx-auto my-6 p-8">
           <div className="w-16 h-16 rounded-2xl bg-amber-500/20 text-amber-700 flex items-center justify-center mx-auto mb-4 border border-amber-300">
@@ -217,37 +286,51 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
           </div>
           <h3 className="text-xl font-black text-slate-900">لا توجد لقاءات خدمة مسجلة بعد</h3>
           <p className="text-slate-600 text-xs sm:text-sm mt-2 mb-6 leading-relaxed max-w-md mx-auto">
-            تم تشغيل المنصة نظيفة بدون أي بيانات تجريبية. ابدأ الآن بإنشاء أول لقاء خدمة لتسجيل حضور الأولاد واختيار الخادم الذي سيشرح الدرس (أ/ مينا، أ/ ماجد، أ/ صبري أو خادم ضيف).
+            {isServant
+              ? 'تم تشغيل المنصة نظيفة بدون أي بيانات تجريبية. ابدأ الآن بإنشاء أول لقاء خدمة لتسجيل حضور الأولاد واختيار الخادم الذي سيشرح الدرس (أ/ مينا، أ/ ماجد، أ/ صبري أو خادم ضيف).'
+              : 'بانتظار إنشاء أول لقاء خدمة من قِبل الخدام المسؤولين.'}
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-3">
-            <button
-              onClick={() => setIsCreatingSession(true)}
-              className="px-6 py-3 bg-amber-500 hover:bg-amber-400 text-stone-950 font-black rounded-2xl transition shadow-lg shadow-amber-500/25 flex items-center gap-2 cursor-pointer"
-            >
-              <Plus className="w-5 h-5" />
-              <span>إنشاء أول لقاء خدمة</span>
-            </button>
+            {isServant ? (
+              <>
+                <button
+                  onClick={() => setIsCreatingSession(true)}
+                  className="px-6 py-3 bg-amber-500 hover:bg-amber-400 text-stone-950 font-black rounded-2xl transition shadow-lg shadow-amber-500/25 flex items-center gap-2 cursor-pointer"
+                >
+                  <Plus className="w-5 h-5" />
+                  <span>إنشاء أول لقاء خدمة</span>
+                </button>
 
-            {onOpenAddStudent && (
-              <button
-                onClick={onOpenAddStudent}
-                className="px-5 py-3 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-2xl transition border border-slate-200 flex items-center gap-2 text-xs cursor-pointer"
-              >
-                <Plus className="w-4 h-4 text-amber-600" />
-                <span>إضافة مخدوم</span>
-              </button>
-            )}
+                {onOpenAddStudent && (
+                  <button
+                    onClick={onOpenAddStudent}
+                    className="px-5 py-3 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-2xl transition border border-slate-200 flex items-center gap-2 text-xs cursor-pointer"
+                  >
+                    <Plus className="w-4 h-4 text-amber-600" />
+                    <span>إضافة مخدوم</span>
+                  </button>
+                )}
 
-            {onOpenImportExport && (
+                {onOpenImportExport && (
+                  <button
+                    onClick={onOpenImportExport}
+                    className="px-5 py-3 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-2xl transition border border-slate-200 flex items-center gap-2 text-xs cursor-pointer"
+                  >
+                    <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+                    <span>استيراد كشف Excel</span>
+                  </button>
+                )}
+              </>
+            ) : onOpenLogin ? (
               <button
-                onClick={onOpenImportExport}
-                className="px-5 py-3 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-2xl transition border border-slate-200 flex items-center gap-2 text-xs cursor-pointer"
+                onClick={onOpenLogin}
+                className="px-6 py-3 bg-amber-500 hover:bg-amber-400 text-stone-950 font-black rounded-2xl transition shadow-lg shadow-amber-500/25 flex items-center gap-2 cursor-pointer"
               >
-                <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
-                <span>استيراد كشف Excel</span>
+                <ShieldCheck className="w-5 h-5" />
+                <span>تسجيل دخول الخادم لإنشاء لقاء</span>
               </button>
-            )}
+            ) : null}
           </div>
         </div>
       ) : (
@@ -279,10 +362,11 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
               <input
                 type="text"
                 value={activeSession.title}
-                onChange={(e) => onUpdateSessionData(activeSession.id, { title: e.target.value })}
-                className="text-xl sm:text-2xl font-black text-slate-900 border-b border-dashed border-slate-300 hover:border-amber-500 focus:border-amber-600 focus:outline-none bg-transparent transition py-0.5"
+                disabled={!isServant}
+                onChange={(e) => isServant && onUpdateSessionData(activeSession.id, { title: e.target.value })}
+                className="text-xl sm:text-2xl font-black text-slate-900 border-b border-dashed border-slate-300 hover:border-amber-500 focus:border-amber-600 focus:outline-none bg-transparent transition py-0.5 disabled:border-transparent disabled:cursor-default"
                 placeholder="عنوان اللقاء والدرس"
-                title="انقر لتعديل عنوان الاجتماع"
+                title={isServant ? "انقر لتعديل عنوان الاجتماع" : undefined}
               />
             </div>
 
@@ -292,9 +376,10 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
               <input
                 type="text"
                 value={activeSession.verseOfTheWeek || ''}
-                onChange={(e) => onUpdateSessionData(activeSession.id, { verseOfTheWeek: e.target.value })}
+                disabled={!isServant}
+                onChange={(e) => isServant && onUpdateSessionData(activeSession.id, { verseOfTheWeek: e.target.value })}
                 placeholder="آية الأسبوع (مثال: «اَلْمُسَايِرُ الْحُكَمَاءَ يَصِيرُ حَكِيمًا»)"
-                className="text-xs sm:text-sm text-slate-600 hover:text-slate-900 border-b border-transparent hover:border-slate-300 focus:border-amber-500 focus:outline-none w-full bg-transparent transition"
+                className="text-xs sm:text-sm text-slate-600 hover:text-slate-900 border-b border-transparent hover:border-slate-300 focus:border-amber-500 focus:outline-none w-full bg-transparent transition disabled:cursor-default"
               />
             </div>
           </div>
@@ -317,13 +402,15 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
               </select>
             </div>
 
-            <button
-              onClick={() => setIsCreatingSession(true)}
-              className="flex items-center gap-1.5 px-3.5 py-2 bg-red-900 hover:bg-red-800 text-white rounded-2xl text-xs sm:text-sm font-bold transition shadow-sm active:scale-95"
-            >
-              <Plus className="w-4 h-4 text-amber-400" />
-              <span>لقاء جديد</span>
-            </button>
+            {isServant && (
+              <button
+                onClick={() => setIsCreatingSession(true)}
+                className="flex items-center gap-1.5 px-3.5 py-2 bg-red-900 hover:bg-red-800 text-white rounded-2xl text-xs sm:text-sm font-bold transition shadow-sm active:scale-95"
+              >
+                <Plus className="w-4 h-4 text-amber-400" />
+                <span>لقاء جديد</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -412,24 +499,26 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
             />
           </div>
 
-          {/* Bulk actions */}
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              onClick={() => onBulkUpdateAttendance(activeSession.id, 'present')}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl transition shadow-sm active:scale-95"
-              title="تحضير جميع المخدومين في هذا اليوم"
-            >
-              <CheckCheck className="w-3.5 h-3.5" />
-              <span>تحضير الكل</span>
-            </button>
-            <button
-              onClick={() => onBulkUpdateAttendance(activeSession.id, 'absent')}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition active:scale-95"
-              title="تحديد الكل كغائب"
-            >
-              <span>تصفير الحضور</span>
-            </button>
-          </div>
+          {/* Bulk actions (Servants only) */}
+          {isServant && (
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                onClick={() => handleProtectedBulkUpdate('present')}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl transition shadow-sm active:scale-95"
+                title="تحضير جميع المخدومين في هذا اليوم"
+              >
+                <CheckCheck className="w-3.5 h-3.5" />
+                <span>تحضير الكل</span>
+              </button>
+              <button
+                onClick={() => handleProtectedBulkUpdate('absent')}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition active:scale-95"
+                title="تحديد الكل كغائب"
+              >
+                <span>تصفير الحضور</span>
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Filters Row */}
@@ -620,36 +709,45 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
                   {/* Attendance Status Selection Buttons */}
                   <div className="flex items-center gap-1.5 self-start sm:self-auto bg-slate-100 p-1 rounded-2xl border border-slate-200">
                     <button
-                      onClick={() => onUpdateStudentAttendance(activeSession.id, student.id, 'present')}
+                      onClick={() => handleProtectedAttendanceChange(student.id, 'present')}
                       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition ${
                         isPresent
                           ? 'bg-emerald-600 text-white shadow-sm'
+                          : !isServant
+                          ? 'text-slate-400 opacity-60 cursor-pointer'
                           : 'text-slate-600 hover:text-emerald-700 hover:bg-emerald-50'
                       }`}
+                      title={!isServant ? 'تسجيل دخول الخادم مطلوب لتعديل الحضور' : undefined}
                     >
                       <CheckCircle2 className="w-3.5 h-3.5" />
                       <span>حاضر</span>
                     </button>
 
                     <button
-                      onClick={() => onUpdateStudentAttendance(activeSession.id, student.id, 'absent')}
+                      onClick={() => handleProtectedAttendanceChange(student.id, 'absent')}
                       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition ${
                         isAbsent
                           ? 'bg-rose-600 text-white shadow-sm'
+                          : !isServant
+                          ? 'text-slate-400 opacity-60 cursor-pointer'
                           : 'text-slate-600 hover:text-rose-700 hover:bg-rose-50'
                       }`}
+                      title={!isServant ? 'تسجيل دخول الخادم مطلوب لتعديل الحضور' : undefined}
                     >
                       <XCircle className="w-3.5 h-3.5" />
                       <span>غائب</span>
                     </button>
 
                     <button
-                      onClick={() => onUpdateStudentAttendance(activeSession.id, student.id, 'excused')}
+                      onClick={() => handleProtectedAttendanceChange(student.id, 'excused')}
                       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition ${
                         isExcused
                           ? 'bg-amber-600 text-white shadow-sm'
+                          : !isServant
+                          ? 'text-slate-400 opacity-60 cursor-pointer'
                           : 'text-slate-600 hover:text-amber-700 hover:bg-amber-50'
                       }`}
+                      title={!isServant ? 'تسجيل دخول الخادم مطلوب لتعديل الحضور' : undefined}
                     >
                       <Clock className="w-3.5 h-3.5" />
                       <span>معتذر</span>
@@ -666,13 +764,19 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
                         مستحق لـ «{pendingReward.tier.title}» لتسجيله {currentStreak} مرات حضور متتالية!
                       </p>
                     </div>
-                    <button
-                      onClick={() => onDeliverReward(student, pendingReward.tier)}
-                      className="px-3 py-1 bg-amber-500 hover:bg-amber-400 text-stone-950 text-xs font-black rounded-lg transition shadow-xs shrink-0 flex items-center gap-1"
-                    >
-                      <Gift className="w-3.5 h-3.5" />
-                      <span>تسليم الهدية 🎁</span>
-                    </button>
+                    {isServant ? (
+                      <button
+                        onClick={() => onDeliverReward(student, pendingReward.tier)}
+                        className="px-3 py-1 bg-amber-500 hover:bg-amber-400 text-stone-950 text-xs font-black rounded-lg transition shadow-xs shrink-0 flex items-center gap-1"
+                      >
+                        <Gift className="w-3.5 h-3.5" />
+                        <span>تسليم الهدية 🎁</span>
+                      </button>
+                    ) : (
+                      <span className="text-[11px] font-bold text-amber-800 bg-amber-100/80 px-2.5 py-1 rounded-lg">
+                        بانتظار تسليم الخادم 🎁
+                      </span>
+                    )}
                   </div>
                 )}
 
@@ -685,16 +789,18 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
                       {/* Liturgy checkbox button */}
                       <button
                         onClick={() =>
-                          onUpdateStudentAttendance(activeSession.id, student.id, 'present', {
+                          handleProtectedAttendanceChange(student.id, 'present', {
                             liturgy: !record.bonus.liturgy,
                           })
                         }
                         className={`flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold transition border ${
                           record.bonus.liturgy
                             ? 'bg-purple-600 text-white border-purple-600 shadow-xs'
+                            : !isServant
+                            ? 'bg-slate-50 text-slate-400 border-slate-200 opacity-60 cursor-pointer'
                             : 'bg-slate-50 text-slate-600 border-slate-200 hover:border-purple-300 hover:bg-purple-50'
                         }`}
-                        title="حضور القداس الإلهي"
+                        title={!isServant ? 'تسجيل دخول الخادم مطلوب للتعديل' : 'حضور القداس الإلهي'}
                       >
                         <Church className="w-3 h-3" />
                         <span>القداس (+{pointsRules.liturgy})</span>
@@ -703,16 +809,18 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
                       {/* Verse checkbox button */}
                       <button
                         onClick={() =>
-                          onUpdateStudentAttendance(activeSession.id, student.id, 'present', {
+                          handleProtectedAttendanceChange(student.id, 'present', {
                             verse: !record.bonus.verse,
                           })
                         }
                         className={`flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold transition border ${
                           record.bonus.verse
                             ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                            : !isServant
+                            ? 'bg-slate-50 text-slate-400 border-slate-200 opacity-60 cursor-pointer'
                             : 'bg-slate-50 text-slate-600 border-slate-200 hover:border-blue-300 hover:bg-blue-50'
                         }`}
-                        title="حفظ الآية الأسبوعية"
+                        title={!isServant ? 'تسجيل دخول الخادم مطلوب للتعديل' : 'حفظ الآية الأسبوعية'}
                       >
                         <BookOpen className="w-3 h-3" />
                         <span>حفظ الآية (+{pointsRules.verse})</span>
@@ -721,16 +829,18 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
                       {/* Prayer checkbox button */}
                       <button
                         onClick={() =>
-                          onUpdateStudentAttendance(activeSession.id, student.id, 'present', {
+                          handleProtectedAttendanceChange(student.id, 'present', {
                             prayer: !record.bonus.prayer,
                           })
                         }
                         className={`flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold transition border ${
                           record.bonus.prayer
                             ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                            : !isServant
+                            ? 'bg-slate-50 text-slate-400 border-slate-200 opacity-60 cursor-pointer'
                             : 'bg-slate-50 text-slate-600 border-slate-200 hover:border-emerald-300 hover:bg-emerald-50'
                         }`}
-                        title="الالتزام بوقفة الصلاة"
+                        title={!isServant ? 'تسجيل دخول الخادم مطلوب للتعديل' : 'الالتزام بوقفة الصلاة'}
                       >
                         <HeartHandshake className="w-3 h-3" />
                         <span>الصلاة (+{pointsRules.prayer})</span>
@@ -739,16 +849,18 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
                       {/* Participation button */}
                       <button
                         onClick={() =>
-                          onUpdateStudentAttendance(activeSession.id, student.id, 'present', {
+                          handleProtectedAttendanceChange(student.id, 'present', {
                             participation: !record.bonus.participation,
                           })
                         }
                         className={`flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold transition border ${
                           record.bonus.participation
                             ? 'bg-amber-600 text-white border-amber-600 shadow-xs'
+                            : !isServant
+                            ? 'bg-slate-50 text-slate-400 border-slate-200 opacity-60 cursor-pointer'
                             : 'bg-slate-50 text-slate-600 border-slate-200 hover:border-amber-300 hover:bg-amber-50'
                         }`}
-                        title="المشاركة الفعالة والتفاعل بالدرس"
+                        title={!isServant ? 'تسجيل دخول الخادم مطلوب للتعديل' : 'المشاركة الفعالة والتفاعل بالدرس'}
                       >
                         <Award className="w-3 h-3" />
                         <span>تفاعل (+{pointsRules.participation})</span>
@@ -759,7 +871,7 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
                         onClick={() => {
                           const current = record.bonus.customPoints || 0;
                           const nextVal = current === 0 ? 5 : current === 5 ? 10 : current === 10 ? 15 : 0;
-                          onUpdateStudentAttendance(activeSession.id, student.id, 'present', {
+                          handleProtectedAttendanceChange(student.id, 'present', {
                             customPoints: nextVal,
                             customReason: nextVal > 0 ? 'بونص سؤال أو فقرة' : '',
                           });
@@ -767,9 +879,11 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
                         className={`flex items-center gap-1 px-2 py-1 rounded-xl text-xs font-bold transition border ${
                           record.bonus.customPoints > 0
                             ? 'bg-rose-600 text-white border-rose-600'
+                            : !isServant
+                            ? 'bg-slate-50 text-slate-400 border-slate-200 opacity-60 cursor-pointer'
                             : 'bg-slate-50 text-slate-600 border-slate-200 hover:border-rose-300'
                         }`}
-                        title="انقر لزيادة أو تصفير بونص إضافي سريع (+5 / +10 / +15)"
+                        title={!isServant ? 'تسجيل دخول الخادم مطلوب للتعديل' : 'انقر لزيادة أو تصفير بونص إضافي سريع (+5 / +10 / +15)'}
                       >
                         <Sparkles className="w-3 h-3" />
                         <span>

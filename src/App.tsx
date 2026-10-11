@@ -33,16 +33,25 @@ import { getTodayBirthdays } from './utils/birthday';
 
 export default function App() {
   const [appState, setAppState] = useState<AppState>(() => loadAppState());
-  const [currentTab, setCurrentTab] = useState<'attendance' | 'rewards' | 'leaderboard' | 'reports' | 'students' | 'settings'>('attendance');
-  
-  // Current user authentication (servant admin or student)
+  // Current user authentication (default is null for normal visitor / guest)
   const [currentUser, setCurrentUser] = useState<CurrentUser>(() => {
     try {
       const saved = localStorage.getItem('church_prep_current_user');
       if (saved) return JSON.parse(saved);
     } catch (e) {}
-    // Default to Mina as Admin Servant
-    return { type: 'servant', servant: initialServants[0] };
+    // Default to Guest (null) - normal visitor mode
+    return null;
+  });
+
+  const [currentTab, setCurrentTab] = useState<'attendance' | 'rewards' | 'leaderboard' | 'reports' | 'students' | 'settings'>(() => {
+    try {
+      const saved = localStorage.getItem('church_prep_current_user');
+      if (saved) {
+        const u = JSON.parse(saved);
+        if (u.type === 'servant') return 'attendance';
+      }
+    } catch (e) {}
+    return 'leaderboard';
   });
 
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
@@ -109,6 +118,8 @@ export default function App() {
   const todayBirthdays = useMemo(() => {
     return getTodayBirthdays(appState.students);
   }, [appState.students]);
+
+  const isServant = currentUser?.type === 'servant';
 
   // 1. Session Updates
   const handleUpdateSessionData = (sessionId: string, updates: Partial<ServiceSession>) => {
@@ -236,7 +247,7 @@ export default function App() {
     try {
       localStorage.removeItem('church_prep_current_user');
     } catch (e) {}
-    setIsLoginModalOpen(true);
+    setCurrentTab('leaderboard');
   };
 
   // 4. Create New Session
@@ -381,6 +392,7 @@ export default function App() {
         todayBirthdaysCount={todayBirthdays.length}
         currentUser={currentUser}
         onOpenLogin={() => setIsLoginModalOpen(true)}
+        onLogout={handleLogout}
         onOpenAddStudent={() => {
           setEditingStudent(null);
           setIsAddStudentOpen(true);
@@ -424,7 +436,7 @@ export default function App() {
             />
           )
         ) : (
-          /* Servant Admin Mode: Full Controls */
+          /* Servant or Guest Mode */
           <>
             {currentTab === 'attendance' && (
               <AttendanceView
@@ -435,6 +447,8 @@ export default function App() {
                 pointsRules={appState.pointsRules}
                 rewardTiers={appState.rewardTiers}
                 competitionLogs={appState.competitionLogs}
+                isServant={isServant}
+                onOpenLogin={() => setIsLoginModalOpen(true)}
                 onSelectSession={setCurrentSessionId}
                 onUpdateSessionData={handleUpdateSessionData}
                 onUpdateStudentAttendance={handleUpdateStudentAttendance}
@@ -456,6 +470,8 @@ export default function App() {
                 pointsRules={appState.pointsRules}
                 rewardTiers={appState.rewardTiers}
                 competitionLogs={appState.competitionLogs}
+                isServant={isServant}
+                onOpenLogin={() => setIsLoginModalOpen(true)}
                 onDeliverReward={handleDeliverReward}
                 onRevokeReward={handleRevokeReward}
               />
@@ -492,6 +508,8 @@ export default function App() {
                 pointsRules={appState.pointsRules}
                 rewardTiers={appState.rewardTiers}
                 competitionLogs={appState.competitionLogs}
+                isServant={isServant}
+                onOpenLogin={() => setIsLoginModalOpen(true)}
                 onSelectStudent={(s) => setProfileStudent(s)}
                 onOpenAddStudent={() => {
                   setEditingStudent(null);
@@ -507,16 +525,34 @@ export default function App() {
             )}
 
             {currentTab === 'settings' && (
-              <SettingsView
-                rewardTiers={appState.rewardTiers}
-                pointsRules={appState.pointsRules}
-                churchName={appState.churchName}
-                serviceName={appState.serviceName}
-                onUpdateRewardTiers={handleUpdateRewardTiers}
-                onUpdatePointsRules={handleUpdatePointsRules}
-                onUpdateChurchDetails={handleUpdateChurchDetails}
-                onResetDefaults={handleResetDefaults}
-              />
+              isServant ? (
+                <SettingsView
+                  rewardTiers={appState.rewardTiers}
+                  pointsRules={appState.pointsRules}
+                  churchName={appState.churchName}
+                  serviceName={appState.serviceName}
+                  onUpdateRewardTiers={handleUpdateRewardTiers}
+                  onUpdatePointsRules={handleUpdatePointsRules}
+                  onUpdateChurchDetails={handleUpdateChurchDetails}
+                  onResetDefaults={handleResetDefaults}
+                />
+              ) : (
+                <div className="bg-white rounded-3xl border border-slate-200 p-8 sm:p-12 text-center max-w-lg mx-auto my-8 shadow-sm">
+                  <div className="w-16 h-16 rounded-3xl bg-amber-500/20 text-amber-600 flex items-center justify-center mx-auto mb-4 border border-amber-300">
+                    <span className="text-3xl">🔒</span>
+                  </div>
+                  <h3 className="text-lg font-black text-slate-900 mb-1">لوحة التحكم مخصصة للخدام</h3>
+                  <p className="text-xs text-slate-500 mb-6 leading-relaxed">
+                    لتعديل قواعد النقاط، أسماء الأسر، هدايا التتابع، وإعدادات الخدمة، يرجى تسجيل دخول الخادم المسؤول.
+                  </p>
+                  <button
+                    onClick={() => setIsLoginModalOpen(true)}
+                    className="px-6 py-2.5 bg-amber-500 hover:bg-amber-400 text-stone-950 font-black text-xs rounded-xl shadow-md inline-flex items-center gap-1.5 transition active:scale-95 cursor-pointer"
+                  >
+                    <span>تسجيل دخول الخادم</span>
+                  </button>
+                </div>
+              )
             )}
           </>
         )}
@@ -581,6 +617,7 @@ export default function App() {
           pointsRules={appState.pointsRules}
           rewardTiers={appState.rewardTiers}
           competitionLogs={appState.competitionLogs}
+          isServant={isServant}
           onClose={() => setProfileStudent(null)}
           onEditStudent={(s) => {
             setProfileStudent(null);
