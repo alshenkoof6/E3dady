@@ -107,11 +107,11 @@ export const AddStudentModal: React.FC<AddStudentModalProps> = ({
       grade,
       gender,
       family: targetFamily,
-      birthDate: birthDate.trim() || undefined,
-      photoUrl: photoUrl.trim() || undefined,
-      phone: phone.trim() || undefined,
-      parentPhone: parentPhone.trim() || undefined,
-      notes: notes.trim() || undefined,
+      ...(birthDate.trim() ? { birthDate: birthDate.trim() } : {}),
+      ...(photoUrl.trim() ? { photoUrl: photoUrl.trim() } : {}),
+      ...(phone.trim() ? { phone: phone.trim() } : {}),
+      ...(parentPhone.trim() ? { parentPhone: parentPhone.trim() } : {}),
+      ...(notes.trim() ? { notes: notes.trim() } : {}),
       rewardsClaimed: initialStudent?.rewardsClaimed || [],
     };
 

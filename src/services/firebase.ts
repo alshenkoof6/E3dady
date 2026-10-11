@@ -217,11 +217,35 @@ export function subscribeToDatabase(
   };
 }
 
+/**
+ * Deep sanitization helper that recursively removes `undefined` properties
+ * from objects and arrays, preventing Firestore "Unsupported field value: undefined" errors.
+ */
+export function sanitizeForFirestore<T>(data: T): T {
+  if (data === null || data === undefined) {
+    return null as unknown as T;
+  }
+  if (Array.isArray(data)) {
+    return data.map((item) => sanitizeForFirestore(item)) as unknown as T;
+  }
+  if (typeof data === 'object') {
+    const cleaned: Record<string, any> = {};
+    for (const [key, value] of Object.entries(data)) {
+      if (value !== undefined) {
+        cleaned[key] = sanitizeForFirestore(value);
+      }
+    }
+    return cleaned as T;
+  }
+  return data;
+}
+
 // Student write operations
 export async function syncStudentToFirestore(student: Student): Promise<void> {
   const path = `students/${student.id}`;
   try {
-    await setDoc(doc(db, 'students', student.id), student);
+    const sanitized = sanitizeForFirestore(student);
+    await setDoc(doc(db, 'students', student.id), sanitized);
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, path);
   }
@@ -240,7 +264,8 @@ export async function deleteStudentFromFirestore(studentId: string): Promise<voi
 export async function syncSessionToFirestore(session: ServiceSession): Promise<void> {
   const path = `sessions/${session.id}`;
   try {
-    await setDoc(doc(db, 'sessions', session.id), session);
+    const sanitized = sanitizeForFirestore(session);
+    await setDoc(doc(db, 'sessions', session.id), sanitized);
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, path);
   }
@@ -259,7 +284,8 @@ export async function deleteSessionFromFirestore(sessionId: string): Promise<voi
 export async function syncCompetitionToFirestore(comp: CompetitionLog): Promise<void> {
   const path = `competitions/${comp.id}`;
   try {
-    await setDoc(doc(db, 'competitions', comp.id), comp);
+    const sanitized = sanitizeForFirestore(comp);
+    await setDoc(doc(db, 'competitions', comp.id), sanitized);
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, path);
   }
@@ -274,7 +300,8 @@ export async function syncSettingsToFirestore(settings: {
 }): Promise<void> {
   const path = 'settings/general';
   try {
-    await setDoc(doc(db, 'settings', 'general'), settings);
+    const sanitized = sanitizeForFirestore(settings);
+    await setDoc(doc(db, 'settings', 'general'), sanitized);
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, path);
   }
@@ -286,29 +313,29 @@ export async function uploadFullStateToFirestore(state: AppState): Promise<void>
 
   // Settings
   const settingsRef = doc(db, 'settings', 'general');
-  batch.set(settingsRef, {
+  batch.set(settingsRef, sanitizeForFirestore({
     churchName: state.churchName,
     serviceName: state.serviceName,
     pointsRules: state.pointsRules,
     rewardTiers: state.rewardTiers,
-  });
+  }));
 
   // Students
   state.students.forEach((std) => {
     const stdRef = doc(db, 'students', std.id);
-    batch.set(stdRef, std);
+    batch.set(stdRef, sanitizeForFirestore(std));
   });
 
   // Sessions
   state.sessions.forEach((sess) => {
     const sessRef = doc(db, 'sessions', sess.id);
-    batch.set(sessRef, sess);
+    batch.set(sessRef, sanitizeForFirestore(sess));
   });
 
   // Competitions
   state.competitionLogs.forEach((comp) => {
     const compRef = doc(db, 'competitions', comp.id);
-    batch.set(compRef, comp);
+    batch.set(compRef, sanitizeForFirestore(comp));
   });
 
   try {
@@ -317,3 +344,4 @@ export async function uploadFullStateToFirestore(state: AppState): Promise<void>
     handleFirestoreError(error, OperationType.WRITE, 'batch-full-sync');
   }
 }
+
