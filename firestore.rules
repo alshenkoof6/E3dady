@@ -1,0 +1,42 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128;
+    }
+
+    // Preparatory Service Students
+    match /students/{studentId} {
+      allow get: if isValidId(studentId);
+      allow list: if true;
+      allow create, update, delete: if isValidId(studentId);
+    }
+
+    // Weekly Meeting Sessions & Attendance
+    match /sessions/{sessionId} {
+      allow get: if isValidId(sessionId);
+      allow list: if true;
+      allow create, update, delete: if isValidId(sessionId);
+    }
+
+    // Competitions and Activities Log
+    match /competitions/{competitionId} {
+      allow get: if isValidId(competitionId);
+      allow list: if true;
+      allow create, update, delete: if isValidId(competitionId);
+    }
+
+    // General App Settings & Rules
+    match /settings/{settingId} {
+      allow get: if isValidId(settingId);
+      allow list: if true;
+      allow create, update, delete: if isValidId(settingId);
+    }
+  }
+}

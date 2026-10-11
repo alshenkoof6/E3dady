@@ -1,0 +1,158 @@
+{
+  "entities": {
+    "student": {
+      "title": "Student",
+      "description": "Student enrolled in the preparatory church service",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique student identifier"
+        },
+        "name": {
+          "type": "string",
+          "description": "Full name of the student"
+        },
+        "grade": {
+          "type": "string",
+          "description": "School grade level (e.g., أولى إعدادي)"
+        },
+        "gender": {
+          "type": "string",
+          "description": "Gender: بنين or بنات"
+        },
+        "family": {
+          "type": "string",
+          "description": "Church family group name"
+        },
+        "birthDate": {
+          "type": "string",
+          "description": "Date of birth in YYYY-MM-DD format"
+        },
+        "photoUrl": {
+          "type": "string",
+          "description": "Student avatar or photo URL"
+        },
+        "phone": {
+          "type": "string",
+          "description": "Student mobile phone number"
+        },
+        "parentPhone": {
+          "type": "string",
+          "description": "Parent mobile phone number"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Servant notes about the student"
+        }
+      },
+      "required": ["id", "name", "grade", "gender", "family"]
+    },
+    "serviceSession": {
+      "title": "ServiceSession",
+      "description": "Meeting session with attendance and spiritual records",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique session identifier"
+        },
+        "date": {
+          "type": "string",
+          "description": "Meeting date in YYYY-MM-DD format"
+        },
+        "title": {
+          "type": "string",
+          "description": "Title of the session or lesson"
+        },
+        "verseOfTheWeek": {
+          "type": "string",
+          "description": "Weekly memory bible verse"
+        },
+        "speakerServant": {
+          "type": "string",
+          "description": "Name of the servant giving the sermon"
+        },
+        "guestSpeakerName": {
+          "type": "string",
+          "description": "Guest speaker name if applicable"
+        },
+        "notes": {
+          "type": "string",
+          "description": "General session notes"
+        }
+      },
+      "required": ["id", "date", "title"]
+    },
+    "competitionLog": {
+      "title": "CompetitionLog",
+      "description": "Spiritual competition or activity bonus log",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique competition log identifier"
+        },
+        "title": {
+          "type": "string",
+          "description": "Competition or event title"
+        },
+        "date": {
+          "type": "string",
+          "description": "Date of competition in YYYY-MM-DD format"
+        },
+        "points": {
+          "type": "number",
+          "description": "Points awarded"
+        },
+        "description": {
+          "type": "string",
+          "description": "Details about the event"
+        }
+      },
+      "required": ["id", "title", "date", "points"]
+    },
+    "appSettings": {
+      "title": "AppSettings",
+      "description": "General church service settings and point reward rules",
+      "type": "object",
+      "properties": {
+        "churchName": {
+          "type": "string",
+          "description": "Name of the church"
+        },
+        "serviceName": {
+          "type": "string",
+          "description": "Name of the preparatory service"
+        }
+      },
+      "required": ["churchName", "serviceName"]
+    }
+  },
+  "firestore": {
+    "/students/{studentId}": {
+      "schema": {
+        "$ref": "#/entities/student"
+      },
+      "description": "Collection of all preparatory service students"
+    },
+    "/sessions/{sessionId}": {
+      "schema": {
+        "$ref": "#/entities/serviceSession"
+      },
+      "description": "Collection of all weekly service sessions and attendance"
+    },
+    "/competitions/{competitionId}": {
+      "schema": {
+        "$ref": "#/entities/competitionLog"
+      },
+      "description": "Collection of competition and bonus point activities"
+    },
+    "/settings/{settingId}": {
+      "schema": {
+        "$ref": "#/entities/appSettings"
+      },
+      "description": "Configuration documents for service and rules"
+    }
+  }
+}

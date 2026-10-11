@@ -15,7 +15,9 @@ import {
   Lock,
   Cake,
   Eye,
-  LogOut
+  LogOut,
+  Database,
+  Cloud
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -26,6 +28,8 @@ interface HeaderProps {
   unclaimedRewardsCount: number;
   todayBirthdaysCount?: number;
   currentUser: CurrentUser;
+  isCloudConnected?: boolean;
+  cloudSyncing?: boolean;
   onOpenLogin: () => void;
   onLogout?: () => void;
   onOpenAddStudent: () => void;
@@ -42,6 +46,8 @@ export const Header: React.FC<HeaderProps> = ({
   unclaimedRewardsCount,
   todayBirthdaysCount = 0,
   currentUser,
+  isCloudConnected = false,
+  cloudSyncing = false,
   onOpenLogin,
   onLogout,
   onOpenAddStudent,
@@ -76,6 +82,20 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Quick Action Buttons & Auth Pill */}
         <div className="flex flex-wrap items-center gap-2">
+          {/* Cloud Database Status Badge */}
+          {isCloudConnected && (
+            <div 
+              className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold bg-white/10 text-emerald-200 rounded-xl border border-emerald-400/25 backdrop-blur-sm"
+              title="متصل بقاعدة بيانات Firebase Firestore السحابية"
+            >
+              <Database className="w-3.5 h-3.5 text-emerald-300" />
+              <span className={`w-1.5 h-1.5 rounded-full ${cloudSyncing ? 'bg-amber-400 animate-ping' : 'bg-emerald-400 animate-pulse'}`} />
+              <span className="text-[11px] font-mono hidden sm:inline">
+                {cloudSyncing ? 'مزامنة...' : 'قاعدة البيانات سحابية'}
+              </span>
+            </div>
+          )}
+
           {/* User Status Button */}
           {currentUser?.type === 'servant' ? (
             <div className="flex items-center gap-1 bg-amber-500/20 border border-amber-400/40 rounded-xl px-2 py-1 backdrop-blur-sm shadow-xs">

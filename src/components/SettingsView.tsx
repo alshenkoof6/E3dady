@@ -12,7 +12,9 @@ import {
   Church, 
   Flame, 
   Award, 
-  AlertTriangle 
+  AlertTriangle,
+  Database,
+  RefreshCw
 } from 'lucide-react';
 
 interface SettingsViewProps {
@@ -20,10 +22,12 @@ interface SettingsViewProps {
   pointsRules: PointsRuleConfig;
   churchName: string;
   serviceName: string;
+  isCloudConnected?: boolean;
   onUpdateRewardTiers: (tiers: RewardTier[]) => void;
   onUpdatePointsRules: (rules: PointsRuleConfig) => void;
   onUpdateChurchDetails: (churchName: string, serviceName: string) => void;
   onResetDefaults: () => void;
+  onForceCloudSync?: () => Promise<void>;
 }
 
 export const SettingsView: React.FC<SettingsViewProps> = ({
@@ -31,11 +35,15 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   pointsRules,
   churchName,
   serviceName,
+  isCloudConnected = true,
   onUpdateRewardTiers,
   onUpdatePointsRules,
   onUpdateChurchDetails,
   onResetDefaults,
+  onForceCloudSync,
 }) => {
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncDoneMessage, setSyncDoneMessage] = useState(false);
   // Local editable copies
   const [localTiers, setLocalTiers] = useState<RewardTier[]>(rewardTiers);
   const [localRules, setLocalRules] = useState<PointsRuleConfig>(pointsRules);
@@ -107,12 +115,51 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         </button>
       </div>
 
-      {savedSuccessMessage && (
-        <div className="p-3 bg-emerald-100 border border-emerald-300 text-emerald-900 text-xs font-bold rounded-2xl flex items-center gap-2 animate-bounce">
-          <Check className="w-4 h-4" />
-          <span>تم تطبيق وحفظ كافة القواعد الجديدة بنجاح في قاعدة البيانات.</span>
+      {/* Cloud Database Integration Status Card */}
+      <div className="bg-gradient-to-r from-emerald-950 via-teal-900 to-slate-900 rounded-3xl p-5 text-white shadow-md border border-emerald-500/30 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex items-start sm:items-center gap-3.5">
+          <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center text-emerald-300 shrink-0">
+            <Database className="w-6 h-6" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 className="text-base font-black text-emerald-200">
+                قاعدة بيانات سحابية متصلة (Firebase Firestore)
+              </h3>
+              <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-400/20 text-emerald-300 border border-emerald-400/30">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                مباشر
+              </span>
+            </div>
+            <p className="text-xs text-emerald-100/80 mt-0.5">
+              بيانات المخدومين، الحضور، المسابقات، والقواعد يتم حفظها ومزامنتها لحظياً في السحابة لتعمل على كل الأجهزة والهواتف.
+            </p>
+          </div>
         </div>
-      )}
+
+        {onForceCloudSync && (
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                setIsSyncing(true);
+                await onForceCloudSync();
+                setSyncDoneMessage(true);
+                setTimeout(() => setSyncDoneMessage(false), 3000);
+              } catch (e) {
+                console.error(e);
+              } finally {
+                setIsSyncing(false);
+              }
+            }}
+            disabled={isSyncing}
+            className="flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-stone-950 font-black text-xs rounded-xl transition shadow-md shrink-0 active:scale-95 disabled:opacity-60"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
+            <span>{isSyncing ? 'جاري المزامنة...' : syncDoneMessage ? 'تمت المزامنة بنجاح!' : 'رفع ومزامنة كاملة الآن ☁️'}</span>
+          </button>
+        )}
+      </div>
 
       {/* 1. STREAK REWARDS RULES SECTION */}
       <div className="bg-white rounded-3xl border border-slate-200/80 shadow-sm p-6 space-y-5">

@@ -30,6 +30,20 @@ import { LoginModal } from './components/LoginModal';
 import { StudentPortalView } from './components/StudentPortalView';
 import { BirthdayNotificationBanner } from './components/BirthdayNotificationBanner';
 import { getTodayBirthdays } from './utils/birthday';
+import { 
+  testConnection, 
+  subscribeToDatabase, 
+  loginWithGoogle, 
+  logoutGoogle, 
+  syncStudentToFirestore, 
+  deleteStudentFromFirestore, 
+  syncSessionToFirestore, 
+  deleteSessionFromFirestore, 
+  syncCompetitionToFirestore, 
+  syncSettingsToFirestore, 
+  uploadFullStateToFirestore,
+  auth 
+} from './services/firebase';
 
 export default function App() {
   const [appState, setAppState] = useState<AppState>(() => loadAppState());
@@ -70,10 +84,61 @@ export default function App() {
   const [profileStudent, setProfileStudent] = useState<Student | null>(null);
   const [rewardDeliveryData, setRewardDeliveryData] = useState<{ student: Student; tier: RewardTier } | null>(null);
 
+  // Cloud Database synchronization states
+  const [isCloudConnected, setIsCloudConnected] = useState(true);
+  const [cloudSyncing, setCloudSyncing] = useState(false);
+
   // Auto-save to localStorage whenever appState changes
   useEffect(() => {
     saveAppState(appState);
   }, [appState]);
+
+  // Initial cloud connection check and real-time synchronization listener
+  useEffect(() => {
+    testConnection().then((connected) => setIsCloudConnected(connected));
+
+    const unsubscribe = subscribeToDatabase(
+      (cloudData) => {
+        setAppState((prev) => {
+          let updated = { ...prev };
+          let hasChanges = false;
+
+          if (cloudData.students !== undefined && cloudData.students.length > 0) {
+            updated.students = cloudData.students;
+            hasChanges = true;
+          }
+
+          if (cloudData.sessions !== undefined && cloudData.sessions.length > 0) {
+            updated.sessions = cloudData.sessions;
+            hasChanges = true;
+          }
+
+          if (cloudData.competitions !== undefined && cloudData.competitions.length > 0) {
+            updated.competitionLogs = cloudData.competitions;
+            hasChanges = true;
+          }
+
+          if (cloudData.settings) {
+            if (cloudData.settings.churchName) updated.churchName = cloudData.settings.churchName;
+            if (cloudData.settings.serviceName) updated.serviceName = cloudData.settings.serviceName;
+            if (cloudData.settings.pointsRules) updated.pointsRules = cloudData.settings.pointsRules;
+            if (cloudData.settings.rewardTiers) updated.rewardTiers = cloudData.settings.rewardTiers;
+            hasChanges = true;
+          }
+
+          return hasChanges ? updated : prev;
+        });
+        setIsCloudConnected(true);
+      },
+      (error) => {
+        console.warn('Real-time sync notification:', error);
+      }
+    );
+
+    return () => {
+      unsubscribe();
+    };
+  }, []);
 
   // Keep currentSessionId valid if sessions list changes
   useEffect(() => {
@@ -123,10 +188,20 @@ export default function App() {
 
   // 1. Session Updates
   const handleUpdateSessionData = (sessionId: string, updates: Partial<ServiceSession>) => {
-    setAppState((prev) => ({
-      ...prev,
-      sessions: prev.sessions.map((s) => (s.id === sessionId ? { ...s, ...updates } : s)),
-    }));
+    setAppState((prev) => {
+      const updatedSessions = prev.sessions.map((s) => (s.id === sessionId ? { ...s, ...updates } : s));
+      const target = updatedSessions.find((s) => s.id === sessionId);
+      if (target) {
+        setCloudSyncing(true);
+        syncSessionToFirestore(target)
+          .catch((e) => console.warn('Firestore sync note:', e))
+          .finally(() => setCloudSyncing(false));
+      }
+      return {
+        ...prev,
+        sessions: updatedSessions,
+      };
+    });
   };
 
   // 2. Student Attendance & Bonus Updates
@@ -145,6 +220,7 @@ export default function App() {
     notes?: string
   ) => {
     setAppState((prev) => {
+      let targetSession: ServiceSession | null = null;
       const updatedSessions = prev.sessions.map((sess) => {
         if (sess.id !== sessionId) return sess;
 
@@ -166,7 +242,7 @@ export default function App() {
             }
           : currentRecord.bonus;
 
-        return {
+        const updated = {
           ...sess,
           records: {
             ...sess.records,
@@ -177,7 +253,16 @@ export default function App() {
             },
           },
         };
+        targetSession = updated;
+        return updated;
       });
+
+      if (targetSession) {
+        setCloudSyncing(true);
+        syncSessionToFirestore(targetSession)
+          .catch((e) => console.warn('Firestore sync note:', e))
+          .finally(() => setCloudSyncing(false));
+      }
 
       return {
         ...prev,
@@ -189,6 +274,7 @@ export default function App() {
   // 3. Bulk attendance status
   const handleBulkUpdateAttendance = (sessionId: string, status: AttendanceStatus) => {
     setAppState((prev) => {
+      let targetSession: ServiceSession | null = null;
       const updatedSessions = prev.sessions.map((sess) => {
         if (sess.id !== sessionId) return sess;
 
@@ -210,11 +296,20 @@ export default function App() {
           };
         });
 
-        return {
+        const updated = {
           ...sess,
           records: newRecords,
         };
+        targetSession = updated;
+        return updated;
       });
+
+      if (targetSession) {
+        setCloudSyncing(true);
+        syncSessionToFirestore(targetSession)
+          .catch((e) => console.warn('Firestore sync note:', e))
+          .finally(() => setCloudSyncing(false));
+      }
 
       return {
         ...prev,
@@ -233,6 +328,24 @@ export default function App() {
     if (currentTab === 'students') setCurrentTab('attendance');
   };
 
+  const handleLoginGoogle = async () => {
+    try {
+      const user = await loginWithGoogle();
+      const servantAccount: ServantAccount = {
+        id: `google-${user.uid}`,
+        name: user.displayName || user.email?.split('@')[0] || 'خادم مسؤول',
+        username: user.email || 'servant',
+        password: '',
+        title: 'خادم مسؤول (Google)',
+      };
+      handleLoginServant(servantAccount);
+      setIsCloudConnected(true);
+    } catch (error) {
+      console.error('Google Sign-In error:', error);
+      alert('تعذر تسجيل الدخول بحساب Google. يمكنك المتابعة بتسجيل الدخول كخادم محلياً.');
+    }
+  };
+
   const handleLoginStudent = (student: Student) => {
     const user: CurrentUser = { type: 'student', student };
     setCurrentUser(user);
@@ -246,6 +359,7 @@ export default function App() {
     setCurrentUser(null);
     try {
       localStorage.removeItem('church_prep_current_user');
+      logoutGoogle().catch(() => {});
     } catch (e) {}
     setCurrentTab('leaderboard');
   };
@@ -274,6 +388,10 @@ export default function App() {
     }));
 
     setCurrentSessionId(newSession.id);
+    setCloudSyncing(true);
+    syncSessionToFirestore(newSession)
+      .catch((e) => console.warn('Firestore sync note:', e))
+      .finally(() => setCloudSyncing(false));
   };
 
   // 5. Open Reward delivery modal
@@ -283,31 +401,59 @@ export default function App() {
 
   // 6. Confirm Reward delivery
   const handleConfirmRewardDelivery = (studentId: string, claimData: ClaimedReward) => {
-    setAppState((prev) => ({
-      ...prev,
-      students: prev.students.map((s) => {
+    setAppState((prev) => {
+      let targetStudent: Student | null = null;
+      const updatedStudents = prev.students.map((s) => {
         if (s.id !== studentId) return s;
-        return {
+        const updated = {
           ...s,
           rewardsClaimed: [...s.rewardsClaimed, claimData],
         };
-      }),
-    }));
+        targetStudent = updated;
+        return updated;
+      });
+
+      if (targetStudent) {
+        setCloudSyncing(true);
+        syncStudentToFirestore(targetStudent)
+          .catch((e) => console.warn('Firestore sync note:', e))
+          .finally(() => setCloudSyncing(false));
+      }
+
+      return {
+        ...prev,
+        students: updatedStudents,
+      };
+    });
   };
 
   // 7. Revoke Reward claim (undo)
   const handleRevokeReward = (studentId: string, claimId: string) => {
     if (!window.confirm('هل أنت متأكد من التراجع عن تسليم هذه الهدية؟')) return;
-    setAppState((prev) => ({
-      ...prev,
-      students: prev.students.map((s) => {
+    setAppState((prev) => {
+      let targetStudent: Student | null = null;
+      const updatedStudents = prev.students.map((s) => {
         if (s.id !== studentId) return s;
-        return {
+        const updated = {
           ...s,
           rewardsClaimed: s.rewardsClaimed.filter((c) => c.id !== claimId),
         };
-      }),
-    }));
+        targetStudent = updated;
+        return updated;
+      });
+
+      if (targetStudent) {
+        setCloudSyncing(true);
+        syncStudentToFirestore(targetStudent)
+          .catch((e) => console.warn('Firestore sync note:', e))
+          .finally(() => setCloudSyncing(false));
+      }
+
+      return {
+        ...prev,
+        students: updatedStudents,
+      };
+    });
   };
 
   // 8. Add or Edit Student
@@ -325,6 +471,11 @@ export default function App() {
         students: updatedStudents,
       };
     });
+
+    setCloudSyncing(true);
+    syncStudentToFirestore(student)
+      .catch((e) => console.warn('Firestore sync note:', e))
+      .finally(() => setCloudSyncing(false));
   };
 
   // 9. Delete Student
@@ -333,6 +484,11 @@ export default function App() {
       ...prev,
       students: prev.students.filter((s) => s.id !== studentId),
     }));
+
+    setCloudSyncing(true);
+    deleteStudentFromFirestore(studentId)
+      .catch((e) => console.warn('Firestore sync note:', e))
+      .finally(() => setCloudSyncing(false));
   };
 
   // 10. Add Competition Bonus
@@ -341,6 +497,11 @@ export default function App() {
       ...prev,
       competitionLogs: [comp, ...prev.competitionLogs],
     }));
+
+    setCloudSyncing(true);
+    syncCompetitionToFirestore(comp)
+      .catch((e) => console.warn('Firestore sync note:', e))
+      .finally(() => setCloudSyncing(false));
   };
 
   // 11. Bulk Import Students
@@ -349,6 +510,11 @@ export default function App() {
       ...prev,
       students: [...prev.students, ...newStudents],
     }));
+
+    setCloudSyncing(true);
+    Promise.all(newStudents.map((s) => syncStudentToFirestore(s)))
+      .catch((e) => console.warn('Firestore import sync note:', e))
+      .finally(() => setCloudSyncing(false));
   };
 
   // 12. Restore Full State
@@ -357,19 +523,50 @@ export default function App() {
     if (newState.sessions.length > 0) {
       setCurrentSessionId(newState.sessions[newState.sessions.length - 1].id);
     }
+    setCloudSyncing(true);
+    uploadFullStateToFirestore(newState)
+      .catch((e) => console.warn('Firestore full sync note:', e))
+      .finally(() => setCloudSyncing(false));
   };
 
   // 13. Update Settings
   const handleUpdateRewardTiers = (tiers: RewardTier[]) => {
-    setAppState((prev) => ({ ...prev, rewardTiers: tiers }));
+    setAppState((prev) => {
+      const updated = { ...prev, rewardTiers: tiers };
+      syncSettingsToFirestore({
+        churchName: updated.churchName,
+        serviceName: updated.serviceName,
+        pointsRules: updated.pointsRules,
+        rewardTiers: updated.rewardTiers,
+      }).catch((e) => console.warn('Firestore settings sync note:', e));
+      return updated;
+    });
   };
 
   const handleUpdatePointsRules = (rules: PointsRuleConfig) => {
-    setAppState((prev) => ({ ...prev, pointsRules: rules }));
+    setAppState((prev) => {
+      const updated = { ...prev, pointsRules: rules };
+      syncSettingsToFirestore({
+        churchName: updated.churchName,
+        serviceName: updated.serviceName,
+        pointsRules: updated.pointsRules,
+        rewardTiers: updated.rewardTiers,
+      }).catch((e) => console.warn('Firestore settings sync note:', e));
+      return updated;
+    });
   };
 
   const handleUpdateChurchDetails = (churchName: string, serviceName: string) => {
-    setAppState((prev) => ({ ...prev, churchName, serviceName }));
+    setAppState((prev) => {
+      const updated = { ...prev, churchName, serviceName };
+      syncSettingsToFirestore({
+        churchName: updated.churchName,
+        serviceName: updated.serviceName,
+        pointsRules: updated.pointsRules,
+        rewardTiers: updated.rewardTiers,
+      }).catch((e) => console.warn('Firestore settings sync note:', e));
+      return updated;
+    });
   };
 
   const handleResetDefaults = () => {
@@ -391,6 +588,8 @@ export default function App() {
         unclaimedRewardsCount={unclaimedRewardsCount}
         todayBirthdaysCount={todayBirthdays.length}
         currentUser={currentUser}
+        isCloudConnected={isCloudConnected}
+        cloudSyncing={cloudSyncing}
         onOpenLogin={() => setIsLoginModalOpen(true)}
         onLogout={handleLogout}
         onOpenAddStudent={() => {
@@ -531,10 +730,16 @@ export default function App() {
                   pointsRules={appState.pointsRules}
                   churchName={appState.churchName}
                   serviceName={appState.serviceName}
+                  isCloudConnected={isCloudConnected}
                   onUpdateRewardTiers={handleUpdateRewardTiers}
                   onUpdatePointsRules={handleUpdatePointsRules}
                   onUpdateChurchDetails={handleUpdateChurchDetails}
                   onResetDefaults={handleResetDefaults}
+                  onForceCloudSync={async () => {
+                    setCloudSyncing(true);
+                    await uploadFullStateToFirestore(appState);
+                    setCloudSyncing(false);
+                  }}
                 />
               ) : (
                 <div className="bg-white rounded-3xl border border-slate-200 p-8 sm:p-12 text-center max-w-lg mx-auto my-8 shadow-sm">
@@ -636,6 +841,7 @@ export default function App() {
           onLoginServant={handleLoginServant}
           onLoginStudent={handleLoginStudent}
           onLogout={handleLogout}
+          onLoginGoogle={handleLoginGoogle}
         />
       )}
     </div>
