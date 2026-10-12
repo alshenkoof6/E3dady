@@ -80,6 +80,8 @@ export default function App() {
   const [isAddStudentOpen, setIsAddStudentOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [isAddCompetitionOpen, setIsAddCompetitionOpen] = useState(false);
+  const [competitionModalMode, setCompetitionModalMode] = useState<'bonus' | 'penalty'>('bonus');
+  const [competitionModalStudentId, setCompetitionModalStudentId] = useState<string | undefined>(undefined);
   const [isImportExportOpen, setIsImportExportOpen] = useState(false);
   const [profileStudent, setProfileStudent] = useState<Student | null>(null);
   const [rewardDeliveryData, setRewardDeliveryData] = useState<{ student: Student; tier: RewardTier } | null>(null);
@@ -216,6 +218,8 @@ export default function App() {
       participation?: boolean;
       customPoints?: number;
       customReason?: string;
+      penaltyPoints?: number;
+      penaltyReason?: string;
     },
     notes?: string
   ) => {
@@ -504,6 +508,12 @@ export default function App() {
       .finally(() => setCloudSyncing(false));
   };
 
+  const handleOpenAddBonusOrPenalty = (student?: Student, mode: 'bonus' | 'penalty' = 'bonus') => {
+    setCompetitionModalMode(mode);
+    setCompetitionModalStudentId(student?.id);
+    setIsAddCompetitionOpen(true);
+  };
+
   // 11. Bulk Import Students
   const handleImportStudents = (newStudents: Student[]) => {
     setAppState((prev) => ({
@@ -596,7 +606,7 @@ export default function App() {
           setEditingStudent(null);
           setIsAddStudentOpen(true);
         }}
-        onOpenAddCompetition={() => setIsAddCompetitionOpen(true)}
+        onOpenAddCompetition={() => handleOpenAddBonusOrPenalty(undefined, 'bonus')}
         onOpenImportExport={() => setIsImportExportOpen(true)}
         onViewBirthdays={() => setCurrentTab('students')}
       />
@@ -791,7 +801,12 @@ export default function App() {
       {isAddCompetitionOpen && (
         <AddCompetitionModal
           students={appState.students}
-          onClose={() => setIsAddCompetitionOpen(false)}
+          initialMode={competitionModalMode}
+          initialStudentId={competitionModalStudentId}
+          onClose={() => {
+            setIsAddCompetitionOpen(false);
+            setCompetitionModalStudentId(undefined);
+          }}
           onAddCompetition={handleAddCompetition}
         />
       )}
@@ -829,6 +844,7 @@ export default function App() {
             setEditingStudent(s);
             setIsAddStudentOpen(true);
           }}
+          onOpenAddBonusOrPenalty={(s, m) => handleOpenAddBonusOrPenalty(s, m)}
         />
       )}
 

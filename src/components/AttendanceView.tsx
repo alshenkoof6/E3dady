@@ -8,7 +8,8 @@ import {
   AttendanceStatus, 
   GradeLevel, 
   Gender,
-  ServantAccount 
+  ServantAccount,
+  StudentAttendanceRecord
 } from '../types';
 import { calculateStudentStats } from '../utils/calculations';
 import { 
@@ -32,7 +33,8 @@ import {
   FileSpreadsheet,
   Cake,
   Lock,
-  ShieldCheck
+  ShieldCheck,
+  AlertTriangle
 } from 'lucide-react';
 import { isBirthdayToday } from '../utils/birthday';
 
@@ -59,6 +61,8 @@ interface AttendanceViewProps {
       participation?: boolean;
       customPoints?: number;
       customReason?: string;
+      penaltyPoints?: number;
+      penaltyReason?: string;
     },
     notes?: string
   ) => void;
@@ -101,6 +105,11 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
   const [newSessionVerse, setNewSessionVerse] = useState('');
   const [newSessionSpeaker, setNewSessionSpeaker] = useState('مينا');
   const [newGuestSpeakerName, setNewGuestSpeakerName] = useState('');
+
+  // Penalty Modal States
+  const [penaltyTarget, setPenaltyTarget] = useState<{ student: Student; record: StudentAttendanceRecord } | null>(null);
+  const [penaltyPointsInput, setPenaltyPointsInput] = useState<number>(5);
+  const [penaltyReasonInput, setPenaltyReasonInput] = useState<string>('استخدام الموبايل أثناء الصلاة أو الدرس');
 
   // Find active session
   const activeSession = useMemo(() => {
@@ -224,6 +233,8 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
       participation?: boolean;
       customPoints?: number;
       customReason?: string;
+      penaltyPoints?: number;
+      penaltyReason?: string;
     },
     notes?: string
   ) => {
@@ -676,6 +687,13 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
                         <span className="text-[11px] font-medium text-slate-500 bg-slate-50 px-2 py-0.5 rounded-lg">
                           {student.family}
                         </span>
+
+                        {record.bonus?.penaltyPoints && record.bonus.penaltyPoints > 0 ? (
+                          <span className="text-[11px] font-black bg-rose-100 text-rose-800 border border-rose-300 px-2 py-0.5 rounded-lg flex items-center gap-1">
+                            <AlertTriangle className="w-3 h-3 text-rose-600" />
+                            <span>خصم مسجل: -{record.bonus.penaltyPoints} ({record.bonus.penaltyReason || 'سلوك سلبي'})</span>
+                          </span>
+                        ) : null}
                       </div>
 
                       {/* Current Streak with Fire Flame Badge */}
@@ -878,30 +896,81 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
                         }}
                         className={`flex items-center gap-1 px-2 py-1 rounded-xl text-xs font-bold transition border ${
                           record.bonus.customPoints > 0
-                            ? 'bg-rose-600 text-white border-rose-600'
+                            ? 'bg-amber-600 text-white border-amber-600 shadow-xs'
                             : !isServant
                             ? 'bg-slate-50 text-slate-400 border-slate-200 opacity-60 cursor-pointer'
-                            : 'bg-slate-50 text-slate-600 border-slate-200 hover:border-rose-300'
+                            : 'bg-slate-50 text-slate-600 border-slate-200 hover:border-amber-300'
                         }`}
                         title={!isServant ? 'تسجيل دخول الخادم مطلوب للتعديل' : 'انقر لزيادة أو تصفير بونص إضافي سريع (+5 / +10 / +15)'}
                       >
                         <Sparkles className="w-3 h-3" />
                         <span>
-                          {record.bonus.customPoints > 0 ? `+${record.bonus.customPoints} مسابقة` : '+ مسابقة'}
+                          {record.bonus.customPoints > 0 ? `+${record.bonus.customPoints} بونص` : '+ بونص'}
                         </span>
                       </button>
+
+                      {/* Behavioral Penalty Button */}
+                      {record.bonus?.penaltyPoints && record.bonus.penaltyPoints > 0 ? (
+                        <button
+                          onClick={() => {
+                            if (!isServant) {
+                              onOpenLogin?.();
+                              return;
+                            }
+                            setPenaltyPointsInput(record.bonus.penaltyPoints || 5);
+                            setPenaltyReasonInput(record.bonus.penaltyReason || 'استخدام الموبايل أثناء الصلاة أو الدرس');
+                            setPenaltyTarget({ student, record });
+                          }}
+                          className="flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-black bg-rose-600 hover:bg-rose-700 text-white border border-rose-700 shadow-xs transition"
+                          title="خصم مطبق على هذا المخدوم، انقر للتعديل أو الإلغاء"
+                        >
+                          <AlertTriangle className="w-3.5 h-3.5 text-rose-200" />
+                          <span>خصم: -{record.bonus.penaltyPoints}</span>
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            if (!isServant) {
+                              onOpenLogin?.();
+                              return;
+                            }
+                            setPenaltyPointsInput(5);
+                            setPenaltyReasonInput('استخدام الموبايل أثناء الصلاة أو الدرس');
+                            setPenaltyTarget({ student, record });
+                          }}
+                          className={`flex items-center gap-1 px-2 py-1 rounded-xl text-xs font-bold transition border ${
+                            !isServant
+                              ? 'bg-slate-50 text-slate-400 border-slate-200 opacity-60 cursor-pointer'
+                              : 'bg-slate-50 text-slate-600 border-slate-200 hover:border-rose-300 hover:text-rose-700 hover:bg-rose-50'
+                          }`}
+                          title={!isServant ? 'تسجيل دخول الخادم مطلوب للتعديل' : 'خصم نقاط بسبب سلوك سلبي (تشويش، استخدام موبايل...)'}
+                        >
+                          <AlertTriangle className="w-3 h-3 text-rose-500" />
+                          <span>خصم نقاط ⚠️</span>
+                        </button>
+                      )}
                     </div>
 
                     {/* Total Points for this session */}
-                    <div className="text-xs text-slate-500 font-bold bg-slate-100 px-2 py-1 rounded-lg">
-                      إجمالي نقاط اليوم: {
-                        pointsRules.attendanceBase +
-                        (record.bonus.liturgy ? pointsRules.liturgy : 0) +
-                        (record.bonus.verse ? pointsRules.verse : 0) +
-                        (record.bonus.prayer ? pointsRules.prayer : 0) +
-                        (record.bonus.participation ? pointsRules.participation : 0) +
-                        (record.bonus.customPoints || 0)
-                      }
+                    <div className="text-xs text-slate-600 font-bold bg-slate-100 px-2.5 py-1 rounded-xl flex items-center gap-1.5">
+                      <span>نقاط اليوم:</span>
+                      <span className="font-black text-amber-950">
+                        {Math.max(
+                          0,
+                          pointsRules.attendanceBase +
+                          (record.bonus.liturgy ? pointsRules.liturgy : 0) +
+                          (record.bonus.verse ? pointsRules.verse : 0) +
+                          (record.bonus.prayer ? pointsRules.prayer : 0) +
+                          (record.bonus.participation ? pointsRules.participation : 0) +
+                          (record.bonus.customPoints || 0) -
+                          (record.bonus?.penaltyPoints || 0)
+                        )}
+                      </span>
+                      {record.bonus?.penaltyPoints && record.bonus.penaltyPoints > 0 ? (
+                        <span className="text-[10px] text-rose-600 font-bold bg-rose-50 border border-rose-200 px-1.5 py-0.5 rounded-md">
+                          (خصم -{record.bonus.penaltyPoints})
+                        </span>
+                      ) : null}
                     </div>
                   </div>
                 )}
@@ -1023,6 +1092,153 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal for Setting/Removing Behavioral Penalty on a Student */}
+      {penaltyTarget && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center font-black">
+                  <AlertTriangle className="w-5 h-5 text-rose-600" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-slate-900">
+                    خصم نقاط / تنبيه سلوكي
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    المخدوم: <span className="font-bold text-slate-800">{penaltyTarget.student.name}</span>
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setPenaltyTarget(null)}
+                className="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100"
+              >
+                <XCircle className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Quick Reason Suggestions */}
+            <div className="space-y-3 mb-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                  أسباب وتنبيهات شائعة (انقر للاختيار):
+                </label>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {[
+                    { label: '📵 استخدام الموبايل بالصلاة أو الدرس', points: 10 },
+                    { label: '🗣️ تشويش وكلام أثناء الكلمة', points: 5 },
+                    { label: '🚪 مغادرة القاعة بدون إذن', points: 10 },
+                    { label: '⏰ تأخير متكرر عن الميعاد', points: 5 },
+                    { label: '🚯 عدم المحافظة على النظافة والنظام', points: 5 },
+                    { label: '📖 عدم إحضار الأجبية أو الإنجيل', points: 5 },
+                  ].map((tpl, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => {
+                        setPenaltyReasonInput(tpl.label);
+                        setPenaltyPointsInput(tpl.points);
+                      }}
+                      className="text-start text-[11px] font-bold p-2 bg-rose-50/70 hover:bg-rose-100 text-rose-900 border border-rose-200/80 rounded-xl transition"
+                    >
+                      {tpl.label} (-{tpl.points})
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  سبب الخصم المكتوب:
+                </label>
+                <input
+                  type="text"
+                  value={penaltyReasonInput}
+                  onChange={(e) => setPenaltyReasonInput(e.target.value)}
+                  placeholder="اكتب سبب الخصم أو التنبيه..."
+                  className="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-rose-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  النقاط المخصومة:
+                </label>
+                <div className="flex items-center gap-2">
+                  {[5, 10, 15, 20].map((p) => (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => setPenaltyPointsInput(p)}
+                      className={`flex-1 py-1.5 text-xs font-black rounded-xl border transition ${
+                        penaltyPointsInput === p
+                          ? 'bg-rose-600 text-white border-rose-600'
+                          : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      -{p}
+                    </button>
+                  ))}
+                  <input
+                    type="number"
+                    min="1"
+                    max="100"
+                    value={penaltyPointsInput}
+                    onChange={(e) => setPenaltyPointsInput(Math.abs(parseInt(e.target.value) || 0))}
+                    className="w-20 px-2 py-1.5 text-xs font-black text-rose-700 bg-white border border-slate-300 rounded-xl text-center focus:outline-none"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+              {penaltyTarget.record.bonus?.penaltyPoints && penaltyTarget.record.bonus.penaltyPoints > 0 ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleProtectedAttendanceChange(penaltyTarget.student.id, penaltyTarget.record.status, {
+                      penaltyPoints: 0,
+                      penaltyReason: '',
+                    });
+                    setPenaltyTarget(null);
+                  }}
+                  className="px-3 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 rounded-xl transition border border-rose-200"
+                >
+                  إلغاء الخصم وحذفه 🔄
+                </button>
+              ) : (
+                <div />
+              )}
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPenaltyTarget(null)}
+                  className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition"
+                >
+                  إغلاق
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleProtectedAttendanceChange(penaltyTarget.student.id, penaltyTarget.record.status, {
+                      penaltyPoints: Number(penaltyPointsInput) || 5,
+                      penaltyReason: penaltyReasonInput.trim() || 'سلوك سلبي',
+                    });
+                    setPenaltyTarget(null);
+                  }}
+                  className="px-5 py-2 text-xs font-black bg-rose-600 hover:bg-rose-500 text-white rounded-xl transition shadow-md flex items-center gap-1.5"
+                >
+                  <AlertTriangle className="w-3.5 h-3.5" />
+                  <span>تطبيق الخصم (-{penaltyPointsInput})</span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

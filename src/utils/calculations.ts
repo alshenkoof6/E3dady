@@ -17,6 +17,7 @@ export interface StudentCalculatedStats {
     verse: number;
     participation: number;
     competitions: number;
+    penalties: number;
     sessionCustom: number;
     tierRewards: number;
   };
@@ -54,11 +55,17 @@ export function calculateStudentStats(
   let versePoints = 0;
   let participationPoints = 0;
   let sessionCustomPoints = 0;
+  let totalPenalties = 0;
 
   // Track session by session from earliest to latest
   sortedSessions.forEach((session) => {
     const rec = session.records[student.id];
     if (!rec) return; // not enrolled or not recorded yet
+
+    // Check session penalty points regardless of status
+    if (rec.bonus?.penaltyPoints && rec.bonus.penaltyPoints > 0) {
+      totalPenalties += rec.bonus.penaltyPoints;
+    }
 
     if (rec.status === 'present') {
       totalPresent++;
@@ -73,7 +80,13 @@ export function calculateStudentStats(
       if (rec.bonus.liturgy) liturgyPoints += pointsRules.liturgy;
       if (rec.bonus.verse) versePoints += pointsRules.verse;
       if (rec.bonus.participation) participationPoints += pointsRules.participation;
-      if (rec.bonus.customPoints) sessionCustomPoints += rec.bonus.customPoints;
+      if (rec.bonus.customPoints) {
+        if (rec.bonus.customPoints < 0) {
+          totalPenalties += Math.abs(rec.bonus.customPoints);
+        } else {
+          sessionCustomPoints += rec.bonus.customPoints;
+        }
+      }
 
     } else if (rec.status === 'absent') {
       totalAbsent++;
@@ -89,11 +102,15 @@ export function calculateStudentStats(
 
   currentStreak = runningStreak;
 
-  // Points from competition logs
+  // Points from competition logs (differentiating positive bonuses from negative deductions)
   let competitionsPoints = 0;
   competitionLogs.forEach((comp) => {
     if (comp.awardedStudentIds.includes(student.id)) {
-      competitionsPoints += comp.points;
+      if (comp.points < 0 || comp.type === 'penalty') {
+        totalPenalties += Math.abs(comp.points);
+      } else {
+        competitionsPoints += comp.points;
+      }
     }
   });
 
@@ -106,7 +123,7 @@ export function calculateStudentStats(
     }
   });
 
-  const totalPoints =
+  const rawTotal =
     attendancePoints +
     prayerPoints +
     liturgyPoints +
@@ -114,7 +131,10 @@ export function calculateStudentStats(
     participationPoints +
     sessionCustomPoints +
     competitionsPoints +
-    tierRewardsPoints;
+    tierRewardsPoints -
+    totalPenalties;
+
+  const totalPoints = Math.max(0, rawTotal);
 
   const totalSessions = totalPresent + totalAbsent + totalExcused;
   const attendanceRate = totalSessions > 0 ? Math.round((totalPresent / totalSessions) * 100) : 0;
@@ -160,6 +180,7 @@ export function calculateStudentStats(
       verse: versePoints,
       participation: participationPoints,
       competitions: competitionsPoints,
+      penalties: totalPenalties,
       sessionCustom: sessionCustomPoints,
       tierRewards: tierRewardsPoints,
     },

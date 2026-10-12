@@ -30,8 +30,10 @@ export interface AttendanceBonus {
   liturgy: boolean;       // حضور القداس
   verse: boolean;         // حفظ الآية
   participation: boolean; // المشاركة الفعالة
-  customPoints: number;   // مسابقة أو نشاط إضافي
+  customPoints: number;   // مسابقة أو نشاط إضافي (+ أو -)
   customReason?: string;
+  penaltyPoints?: number; // نقاط الخصم السلوكي للحصة
+  penaltyReason?: string; // سبب الخصم (تشويش، تأخير، استخدام موبايل...)
 }
 
 export type AttendanceStatus = 'present' | 'absent' | 'excused'; // حاضر | غائب | معتذر
@@ -79,9 +81,10 @@ export interface CompetitionLog {
   id: string;
   title: string;
   date: string;
-  points: number;
+  points: number; // موجب للمكافآت، سالب للخصومات
   description: string;
   awardedStudentIds: string[];
+  type?: 'bonus' | 'penalty'; // نوع العملية: مكافأة أو خصم سلوكي
 }
 
 export interface ServantAccount {

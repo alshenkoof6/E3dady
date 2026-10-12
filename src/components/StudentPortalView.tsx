@@ -25,7 +25,8 @@ import {
   Zap,
   TrendingUp,
   ShieldAlert,
-  Cake
+  Cake,
+  AlertTriangle
 } from 'lucide-react';
 import { isBirthdayToday, calculateAge, formatBirthDateArabic } from '../utils/birthday';
 
@@ -58,6 +59,11 @@ export const StudentPortalView: React.FC<StudentPortalViewProps> = ({
   const sortedSessions = [...sessions].sort(
     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
   );
+
+  // Student specific competition and penalty logs
+  const studentActivities = competitionLogs
+    .filter((c) => c.awardedStudentIds.includes(student.id))
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   // Next milestone calculation
   const nextTier = rewardTiers
@@ -323,7 +329,19 @@ export const StudentPortalView: React.FC<StudentPortalViewProps> = ({
             </span>
           </div>
 
-          <div className="bg-amber-100 border border-amber-300 p-3.5 rounded-2xl text-center col-span-2">
+          {stats.pointsBreakdown.penalties > 0 && (
+            <div className="bg-rose-100/70 border border-rose-300 p-3.5 rounded-2xl text-center">
+              <span className="text-xs text-rose-900 font-bold block flex items-center justify-center gap-1">
+                <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
+                <span>الخصومات السلوكية</span>
+              </span>
+              <span className="text-xl font-black text-rose-900 mt-1 block">
+                -{stats.pointsBreakdown.penalties} نقطة
+              </span>
+            </div>
+          )}
+
+          <div className={`bg-amber-100 border border-amber-300 p-3.5 rounded-2xl text-center ${stats.pointsBreakdown.penalties > 0 ? '' : 'col-span-2'}`}>
             <span className="text-xs text-amber-900 font-bold block">بونص جوائز التتابع الإضافية</span>
             <span className="text-xl font-black text-amber-950 mt-1 block">
               +{stats.pointsBreakdown.tierRewards} نقطة
@@ -392,6 +410,21 @@ export const StudentPortalView: React.FC<StudentPortalViewProps> = ({
                           🎯 مسابقة (+{record.bonus.customPoints})
                         </span>
                       )}
+                      {record.bonus?.penaltyPoints && record.bonus.penaltyPoints > 0 && (
+                        <span className="bg-rose-100 text-rose-800 px-2.5 py-0.5 rounded-lg font-bold flex items-center gap-1 border border-rose-200">
+                          <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
+                          <span>تنبيه سلوكي (-{record.bonus.penaltyPoints}): {record.bonus.penaltyReason || 'سلوك سلبي'}</span>
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  {!isPresent && record.bonus?.penaltyPoints && record.bonus.penaltyPoints > 0 && (
+                    <div className="mt-2 text-xs">
+                      <span className="bg-rose-100 text-rose-800 px-2.5 py-0.5 rounded-lg font-bold flex items-center gap-1 border border-rose-200 inline-flex">
+                        <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
+                        <span>تنبيه سلوكي (-{record.bonus.penaltyPoints}): {record.bonus.penaltyReason || 'سلوك سلبي'}</span>
+                      </span>
                     </div>
                   )}
                 </div>
@@ -421,6 +454,59 @@ export const StudentPortalView: React.FC<StudentPortalViewProps> = ({
           })}
         </div>
       </div>
+
+      {/* Activities and Behavioral Penalties Log */}
+      {studentActivities.length > 0 && (
+        <div className="bg-white rounded-3xl border border-slate-200/80 shadow-sm p-6 space-y-4">
+          <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-amber-500" />
+            <span>سجل الأنشطة والمسابقات والتنبيهات ({studentActivities.length})</span>
+          </h3>
+
+          <div className="space-y-2">
+            {studentActivities.map((act) => {
+              const isNeg = act.points < 0 || act.type === 'penalty';
+              return (
+                <div
+                  key={act.id}
+                  className={`p-3.5 rounded-2xl border flex items-center justify-between text-xs sm:text-sm transition ${
+                    isNeg
+                      ? 'bg-rose-50/70 border-rose-200 text-rose-950'
+                      : 'bg-white border-slate-200 text-slate-800'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    {isNeg ? (
+                      <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0" />
+                    ) : (
+                      <Award className="w-5 h-5 text-amber-500 shrink-0" />
+                    )}
+                    <div>
+                      <span className="font-bold">{act.title}</span>
+                      {act.description && (
+                        <p className="text-slate-500 text-xs mt-0.5">{act.description}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-xs text-slate-400 font-semibold">{act.date}</span>
+                    <span
+                      className={`font-black px-3 py-1 rounded-xl text-xs sm:text-sm ${
+                        isNeg
+                          ? 'bg-rose-100 text-rose-800 border border-rose-300'
+                          : 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                      }`}
+                    >
+                      {isNeg ? `${act.points} نقطة` : `+${act.points} نقطة`}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

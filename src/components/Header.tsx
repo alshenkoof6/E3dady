@@ -171,10 +171,10 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 onClick={onOpenAddCompetition}
                 className="flex items-center gap-1.5 px-3 py-1.5 text-xs sm:text-sm font-bold bg-white/10 hover:bg-white/20 text-amber-200 border border-white/15 rounded-xl transition backdrop-blur-sm active:scale-95"
-                title="إضافة نقاط لمسابقة أو كويز أو نشاط"
+                title="إضافة نقاط بونص لمسابقة أو تسجيل خصم سلوكي"
               >
                 <Zap className="w-4 h-4 text-amber-400" />
-                <span>مسابقة وبونص</span>
+                <span>بونص أو خصم نقاط</span>
               </button>
 
               <button
