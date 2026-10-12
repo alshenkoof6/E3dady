@@ -40,6 +40,7 @@ interface StudentPortalViewProps {
   serviceName: string;
   onLogout: () => void;
   onOpenLoginModal: () => void;
+  onOpenAchievementCard?: () => void;
 }
 
 export const StudentPortalView: React.FC<StudentPortalViewProps> = ({
@@ -52,6 +53,7 @@ export const StudentPortalView: React.FC<StudentPortalViewProps> = ({
   serviceName,
   onLogout,
   onOpenLoginModal,
+  onOpenAchievementCard,
 }) => {
   const stats = calculateStudentStats(student, sessions, pointsRules, competitionLogs, rewardTiers);
 
@@ -162,6 +164,38 @@ export const StudentPortalView: React.FC<StudentPortalViewProps> = ({
           <span className="text-amber-300 font-bold">ملتزم بالخدمة ✨</span>
         </div>
       </div>
+
+      {/* Social Achievement Card Banner */}
+      {onOpenAchievementCard && (
+        <div className="bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 rounded-3xl p-5 text-stone-950 shadow-lg shadow-amber-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-amber-300">
+          <div className="flex items-center gap-3.5">
+            <div className="w-12 h-12 rounded-2xl bg-stone-950 text-amber-400 flex items-center justify-center font-black text-2xl shrink-0 shadow-md">
+              👑
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs bg-stone-950 text-amber-300 px-2 py-0.5 rounded-full font-black">
+                  جديد 📲
+                </span>
+                <h3 className="font-black text-white text-base sm:text-lg">
+                  وسامك التكريمي وبطاقة الإنجاز جاهزة للمشاركة!
+                </h3>
+              </div>
+              <p className="text-xs text-amber-100 font-medium mt-0.5">
+                احصل على صورتك التكريمية الفخمة بألقاب (بطل الشهر - بطل التتابع الذهبي - أفضل قارئ للإنجيل) وشاركها على واتساب والستوري.
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={onOpenAchievementCard}
+            className="px-5 py-2.5 bg-stone-950 hover:bg-stone-900 text-amber-300 font-black text-xs sm:text-sm rounded-2xl transition shadow-md flex items-center justify-center gap-2 shrink-0 active:scale-95 cursor-pointer border border-amber-400/40"
+          >
+            <Award className="w-4 h-4 text-amber-400" />
+            <span>استخراج بطاقتي ومشاركتها 📲</span>
+          </button>
+        </div>
+      )}
 
       {/* Primary KPI Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">

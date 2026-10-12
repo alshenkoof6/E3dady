@@ -28,6 +28,7 @@ import { GiftDeliveryModal } from './components/GiftDeliveryModal';
 import { StudentProfileModal } from './components/StudentProfileModal';
 import { LoginModal } from './components/LoginModal';
 import { StudentPortalView } from './components/StudentPortalView';
+import { AchievementCardModal, AchievementTitleType } from './components/AchievementCardModal';
 import { BirthdayNotificationBanner } from './components/BirthdayNotificationBanner';
 import { getTodayBirthdays } from './utils/birthday';
 import { 
@@ -85,6 +86,7 @@ export default function App() {
   const [isImportExportOpen, setIsImportExportOpen] = useState(false);
   const [profileStudent, setProfileStudent] = useState<Student | null>(null);
   const [rewardDeliveryData, setRewardDeliveryData] = useState<{ student: Student; tier: RewardTier } | null>(null);
+  const [achievementModalData, setAchievementModalData] = useState<{ student: Student; title?: AchievementTitleType } | null>(null);
 
   // Cloud Database synchronization states
   const [isCloudConnected, setIsCloudConnected] = useState(true);
@@ -642,6 +644,7 @@ export default function App() {
               serviceName={appState.serviceName}
               onLogout={handleLogout}
               onOpenLoginModal={() => setIsLoginModalOpen(true)}
+              onOpenAchievementCard={() => setAchievementModalData({ student: currentUser.student, title: 'بطل الشهر' })}
             />
           )
         ) : (
@@ -694,6 +697,7 @@ export default function App() {
                 rewardTiers={appState.rewardTiers}
                 competitionLogs={appState.competitionLogs}
                 onSelectStudent={(s) => setProfileStudent(s)}
+                onOpenAchievementCard={(s, t) => setAchievementModalData({ student: s, title: t })}
               />
             )}
 
@@ -707,6 +711,7 @@ export default function App() {
                 churchName={appState.churchName}
                 serviceName={appState.serviceName}
                 onSelectStudent={(s) => setProfileStudent(s)}
+                onOpenAchievementCard={(s, t) => setAchievementModalData({ student: s, title: t })}
               />
             )}
 
@@ -730,6 +735,7 @@ export default function App() {
                   setEditingStudent(s);
                   setIsAddStudentOpen(true);
                 }}
+                onOpenAchievementCard={(s, t) => setAchievementModalData({ student: s, title: t })}
               />
             )}
 
@@ -845,6 +851,7 @@ export default function App() {
             setIsAddStudentOpen(true);
           }}
           onOpenAddBonusOrPenalty={(s, m) => handleOpenAddBonusOrPenalty(s, m)}
+          onOpenAchievementCard={(s) => setAchievementModalData({ student: s, title: 'بطل الشهر' })}
         />
       )}
 
@@ -858,6 +865,20 @@ export default function App() {
           onLoginStudent={handleLoginStudent}
           onLogout={handleLogout}
           onLoginGoogle={handleLoginGoogle}
+        />
+      )}
+
+      {achievementModalData && (
+        <AchievementCardModal
+          student={achievementModalData.student}
+          sessions={appState.sessions}
+          pointsRules={appState.pointsRules}
+          rewardTiers={appState.rewardTiers}
+          competitionLogs={appState.competitionLogs}
+          churchName={appState.churchName}
+          serviceName={appState.serviceName}
+          initialTitle={achievementModalData.title || 'بطل الشهر'}
+          onClose={() => setAchievementModalData(null)}
         />
       )}
     </div>

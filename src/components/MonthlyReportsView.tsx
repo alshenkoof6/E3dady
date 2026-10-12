@@ -47,6 +47,7 @@ interface MonthlyReportsViewProps {
   churchName: string;
   serviceName: string;
   onSelectStudent: (student: Student) => void;
+  onOpenAchievementCard?: (student: Student, title?: 'بطل الشهر' | 'بطل التتابع الذهبي' | 'افضل قارئ للانجيل وحافظ الآيات') => void;
 }
 
 export const MonthlyReportsView: React.FC<MonthlyReportsViewProps> = ({
@@ -58,6 +59,7 @@ export const MonthlyReportsView: React.FC<MonthlyReportsViewProps> = ({
   churchName,
   serviceName,
   onSelectStudent,
+  onOpenAchievementCard,
 }) => {
   // Extract all available months from sessions
   const availableMonths = useMemo(() => extractAvailableMonths(sessions), [sessions]);
@@ -418,12 +420,25 @@ export const MonthlyReportsView: React.FC<MonthlyReportsViewProps> = ({
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-lg">
+                  <span className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-lg hidden sm:inline">
                     حضور {item.presentCount}/{item.sessionsHeld} ({item.attendanceRate}%)
                   </span>
                   <span className="text-xs font-black text-amber-900 bg-amber-100 px-2.5 py-1 rounded-xl">
                     {item.monthlyPoints} نقطة
                   </span>
+                  {onOpenAchievementCard && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onOpenAchievementCard(item.student, 'بطل الشهر');
+                      }}
+                      className="px-2.5 py-1 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-stone-950 font-black text-xs rounded-xl shadow-xs transition flex items-center gap-1 cursor-pointer shrink-0"
+                      title="استخراج وسام بطل الشهر للمشاركة"
+                    >
+                      <Award className="w-3.5 h-3.5" />
+                      <span>كارت 📲</span>
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
@@ -597,12 +612,13 @@ export const MonthlyReportsView: React.FC<MonthlyReportsViewProps> = ({
                 <th className="py-3 px-2 text-center text-emerald-800">الصلاة</th>
                 <th className="py-3 px-2 text-center text-amber-800">تفاعل</th>
                 <th className="py-3 px-4 text-left font-black text-amber-900">نقاط الشهر</th>
+                <th className="py-3 px-3 text-center">كارت الإنجاز</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {filteredStudents.length === 0 ? (
                 <tr>
-                  <td colSpan={monthlyData.sessionsInMonth.length + 9} className="py-8 text-center text-slate-400 font-medium">
+                  <td colSpan={monthlyData.sessionsInMonth.length + 10} className="py-8 text-center text-slate-400 font-medium">
                     لا يوجد مخدومين يطابقون خيارات البحث.
                   </td>
                 </tr>
@@ -701,6 +717,26 @@ export const MonthlyReportsView: React.FC<MonthlyReportsViewProps> = ({
                       <span className="bg-amber-100/90 border border-amber-300 px-2 py-1 rounded-xl text-xs">
                         {record.monthlyPoints} نقطة
                       </span>
+                    </td>
+
+                    <td className="py-3 px-3 text-center" onClick={(e) => e.stopPropagation()}>
+                      {onOpenAchievementCard && (
+                        <button
+                          onClick={() => {
+                            const suggested = record.attendanceRate === 100 
+                              ? 'بطل الشهر' 
+                              : record.verseCount > 0 
+                              ? 'افضل قارئ للانجيل وحافظ الآيات' 
+                              : 'بطل الشهر';
+                            onOpenAchievementCard(record.student, suggested);
+                          }}
+                          className="px-2 py-1 bg-amber-50 hover:bg-amber-400 text-amber-900 hover:text-stone-950 font-bold text-xs rounded-xl border border-amber-200 transition inline-flex items-center gap-1 cursor-pointer"
+                          title="استخراج وسام وبطاقة الإنجاز"
+                        >
+                          <Award className="w-3.5 h-3.5 text-amber-600" />
+                          <span>كارت 📲</span>
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))

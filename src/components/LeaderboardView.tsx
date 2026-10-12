@@ -29,6 +29,7 @@ interface LeaderboardViewProps {
   rewardTiers: RewardTier[];
   competitionLogs: CompetitionLog[];
   onSelectStudent: (student: Student) => void;
+  onOpenAchievementCard?: (student: Student, title?: 'بطل الشهر' | 'بطل التتابع الذهبي' | 'افضل قارئ للانجيل وحافظ الآيات') => void;
 }
 
 export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
@@ -38,6 +39,7 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
   rewardTiers,
   competitionLogs,
   onSelectStudent,
+  onOpenAchievementCard,
 }) => {
   const [selectedGrade, setSelectedGrade] = useState<GradeLevel | 'الكل'>('الكل');
   const [selectedGender, setSelectedGender] = useState<Gender | 'الكل'>('الكل');
@@ -222,6 +224,20 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
                   </span>
                 </div>
               </div>
+
+              {onOpenAchievementCard && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const suggested = top3[1].currentStreak >= 4 ? 'بطل التتابع الذهبي' : 'بطل الشهر';
+                    onOpenAchievementCard(top3[1].student, suggested);
+                  }}
+                  className="mt-3 w-full py-2 bg-slate-100 hover:bg-amber-100 text-slate-800 hover:text-amber-950 font-bold text-xs rounded-xl border border-slate-200 transition flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <Award className="w-3.5 h-3.5 text-amber-600" />
+                  <span>استخراج كارت الإنجاز 📲</span>
+                </button>
+              )}
             </div>
           )}
 
@@ -271,6 +287,19 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
                   </span>
                 </div>
               </div>
+
+              {onOpenAchievementCard && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onOpenAchievementCard(top3[0].student, 'بطل الشهر');
+                  }}
+                  className="mt-3.5 w-full py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-stone-950 font-black text-xs rounded-xl shadow-md transition flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <Award className="w-4 h-4" />
+                  <span>استخراج وسام بطل الشهر 📲</span>
+                </button>
+              )}
             </div>
           )}
 
@@ -316,6 +345,20 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
                   </span>
                 </div>
               </div>
+
+              {onOpenAchievementCard && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const suggested = top3[2].currentStreak >= 4 ? 'بطل التتابع الذهبي' : 'بطل الشهر';
+                    onOpenAchievementCard(top3[2].student, suggested);
+                  }}
+                  className="mt-3 w-full py-2 bg-stone-100 hover:bg-amber-100 text-stone-800 hover:text-amber-950 font-bold text-xs rounded-xl border border-stone-200 transition flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <Award className="w-3.5 h-3.5 text-amber-600" />
+                  <span>استخراج كارت الإنجاز 📲</span>
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -340,6 +383,7 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
                 <th className="py-3 px-4 text-center">نسبة الحضور</th>
                 <th className="py-3 px-4 text-center">الهدايا الممنوحة</th>
                 <th className="py-3 px-4 text-left font-black text-amber-900">إجمالي النقاط</th>
+                <th className="py-3 px-4 text-center">كارت الإنجاز</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -427,6 +471,26 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
                       <span className="bg-amber-100 px-2.5 py-1 rounded-xl border border-amber-300">
                         {item.totalPoints} نقطة
                       </span>
+                    </td>
+
+                    <td className="py-3 px-4 text-center" onClick={(e) => e.stopPropagation()}>
+                      {onOpenAchievementCard && (
+                        <button
+                          onClick={() => {
+                            const suggested = item.currentStreak >= 4 
+                              ? 'بطل التتابع الذهبي' 
+                              : item.pointsBreakdown.verse > 0 
+                              ? 'افضل قارئ للانجيل وحافظ الآيات' 
+                              : 'بطل الشهر';
+                            onOpenAchievementCard(item.student, suggested);
+                          }}
+                          className="px-2.5 py-1 bg-amber-50 hover:bg-amber-400 text-amber-900 hover:text-stone-950 font-bold text-xs rounded-xl border border-amber-200 transition inline-flex items-center gap-1 cursor-pointer"
+                          title="استخراج وسام وبطاقة الإنجاز"
+                        >
+                          <Award className="w-3.5 h-3.5 text-amber-600" />
+                          <span>كارت 📲</span>
+                        </button>
+                      )}
                     </td>
                   </tr>
                 );

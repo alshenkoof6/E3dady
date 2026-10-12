@@ -41,6 +41,7 @@ interface StudentsViewProps {
   onOpenImportExport: () => void;
   onDeleteStudent: (studentId: string) => void;
   onEditStudent: (student: Student) => void;
+  onOpenAchievementCard?: (student: Student, title?: 'بطل الشهر' | 'بطل التتابع الذهبي' | 'افضل قارئ للانجيل وحافظ الآيات') => void;
 }
 
 export const StudentsView: React.FC<StudentsViewProps> = ({
@@ -56,6 +57,7 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
   onOpenImportExport,
   onDeleteStudent,
   onEditStudent,
+  onOpenAchievementCard,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedGrade, setSelectedGrade] = useState<GradeLevel | 'الكل'>('الكل');
@@ -399,12 +401,27 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
                 )}
               </div>
 
-              <button
-                onClick={() => onSelectStudent(student)}
-                className="text-amber-800 hover:text-amber-900 font-bold text-xs hover:underline"
-              >
-                عرض الملف والسجل ←
-              </button>
+              <div className="flex items-center gap-2">
+                {onOpenAchievementCard && (
+                  <button
+                    onClick={() => {
+                      const suggested = currentStreak >= 4 ? 'بطل التتابع الذهبي' : 'بطل الشهر';
+                      onOpenAchievementCard(student, suggested);
+                    }}
+                    className="px-2.5 py-1 bg-amber-50 hover:bg-amber-400 text-amber-950 font-bold text-xs rounded-xl transition border border-amber-300 flex items-center gap-1 cursor-pointer"
+                    title="استخراج بطاقة الإنجاز والوسام التكريمي"
+                  >
+                    <Award className="w-3.5 h-3.5 text-amber-700" />
+                    <span>كارت الإنجاز 📲</span>
+                  </button>
+                )}
+                <button
+                  onClick={() => onSelectStudent(student)}
+                  className="text-amber-800 hover:text-amber-900 font-bold text-xs hover:underline"
+                >
+                  عرض الملف والسجل ←
+                </button>
+              </div>
             </div>
           </div>
           );

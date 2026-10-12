@@ -39,6 +39,7 @@ interface StudentProfileModalProps {
   onClose: () => void;
   onEditStudent: (student: Student) => void;
   onOpenAddBonusOrPenalty?: (student: Student, mode: 'bonus' | 'penalty') => void;
+  onOpenAchievementCard?: (student: Student) => void;
 }
 
 export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
@@ -51,6 +52,7 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
   onClose,
   onEditStudent,
   onOpenAddBonusOrPenalty,
+  onOpenAchievementCard,
 }) => {
   const stats = calculateStudentStats(student, sessions, pointsRules, competitionLogs, rewardTiers);
 
@@ -127,6 +129,20 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
                   <span>واتساب</span>
                 </a>
               </>
+            )}
+
+            {onOpenAchievementCard && (
+              <button
+                onClick={() => {
+                  onClose();
+                  onOpenAchievementCard(student);
+                }}
+                className="px-3 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-stone-950 text-xs font-black rounded-xl transition shadow-xs flex items-center gap-1.5 cursor-pointer"
+                title="استخراج بطاقة الإنجاز والوسام التكريمي للمشاركة"
+              >
+                <Award className="w-3.5 h-3.5" />
+                <span>بطاقة الإنجاز 📲</span>
+              </button>
             )}
 
             {isServant && onOpenAddBonusOrPenalty && (
