@@ -22,10 +22,11 @@ interface SettingsViewProps {
   pointsRules: PointsRuleConfig;
   churchName: string;
   serviceName: string;
+  patronPriests?: string;
   isCloudConnected?: boolean;
   onUpdateRewardTiers: (tiers: RewardTier[]) => void;
   onUpdatePointsRules: (rules: PointsRuleConfig) => void;
-  onUpdateChurchDetails: (churchName: string, serviceName: string) => void;
+  onUpdateChurchDetails: (churchName: string, serviceName: string, patronPriests?: string) => void;
   onResetDefaults: () => void;
   onForceCloudSync?: () => Promise<void>;
 }
@@ -35,6 +36,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   pointsRules,
   churchName,
   serviceName,
+  patronPriests = 'تحت رعاية: أبونا مكسيموس يوسف • أبونا دوماديوس صليب',
   isCloudConnected = true,
   onUpdateRewardTiers,
   onUpdatePointsRules,
@@ -49,12 +51,13 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const [localRules, setLocalRules] = useState<PointsRuleConfig>(pointsRules);
   const [localChurch, setLocalChurch] = useState(churchName);
   const [localService, setLocalService] = useState(serviceName);
+  const [localPriests, setLocalPriests] = useState(patronPriests);
   const [savedSuccessMessage, setSavedSuccessMessage] = useState(false);
 
   const handleSaveAll = () => {
     onUpdateRewardTiers(localTiers);
     onUpdatePointsRules(localRules);
-    onUpdateChurchDetails(localChurch, localService);
+    onUpdateChurchDetails(localChurch, localService, localPriests);
     setSavedSuccessMessage(true);
     setTimeout(() => setSavedSuccessMessage(false), 3000);
   };
@@ -409,6 +412,20 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               onChange={(e) => setLocalService(e.target.value)}
               className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500"
             />
+          </div>
+
+          <div className="sm:col-span-2">
+            <label className="block text-xs font-bold text-slate-700 mb-1">رعاية الآباء الكهنة</label>
+            <input
+              type="text"
+              value={localPriests}
+              onChange={(e) => setLocalPriests(e.target.value)}
+              placeholder="مثال: تحت رعاية: أبونا مكسيموس يوسف • أبونا دوماديوس صليب"
+              className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500"
+            />
+            <p className="text-[11px] text-slate-400 mt-1">
+              تظهر في شهادات وأوسمة التكريم الصادرة للمخدومين وأعلى المنصة.
+            </p>
           </div>
         </div>
       </div>

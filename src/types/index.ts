@@ -109,4 +109,5 @@ export interface AppState {
   servants: ServantAccount[];
   churchName: string;
   serviceName: string;
+  patronPriests?: string;
 }

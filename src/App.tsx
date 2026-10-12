@@ -123,8 +123,13 @@ export default function App() {
           }
 
           if (cloudData.settings) {
-            if (cloudData.settings.churchName) updated.churchName = cloudData.settings.churchName;
+            if (cloudData.settings.churchName && cloudData.settings.churchName !== 'خدمة المرحلة الإعدادية في الكنيسة' && cloudData.settings.churchName !== 'كنيسة القديسين') {
+              updated.churchName = cloudData.settings.churchName;
+            } else {
+              updated.churchName = 'كنيسة السيدة العذراء مريم بسدود';
+            }
             if (cloudData.settings.serviceName) updated.serviceName = cloudData.settings.serviceName;
+            updated.patronPriests = cloudData.settings.patronPriests || 'تحت رعاية: أبونا مكسيموس يوسف • أبونا دوماديوس صليب';
             if (cloudData.settings.pointsRules) updated.pointsRules = cloudData.settings.pointsRules;
             if (cloudData.settings.rewardTiers) updated.rewardTiers = cloudData.settings.rewardTiers;
             hasChanges = true;
@@ -568,12 +573,18 @@ export default function App() {
     });
   };
 
-  const handleUpdateChurchDetails = (churchName: string, serviceName: string) => {
+  const handleUpdateChurchDetails = (churchName: string, serviceName: string, patronPriests?: string) => {
     setAppState((prev) => {
-      const updated = { ...prev, churchName, serviceName };
+      const updated = { 
+        ...prev, 
+        churchName, 
+        serviceName, 
+        patronPriests: patronPriests || prev.patronPriests || 'تحت رعاية: أبونا مكسيموس يوسف • أبونا دوماديوس صليب' 
+      };
       syncSettingsToFirestore({
         churchName: updated.churchName,
         serviceName: updated.serviceName,
+        patronPriests: updated.patronPriests,
         pointsRules: updated.pointsRules,
         rewardTiers: updated.rewardTiers,
       }).catch((e) => console.warn('Firestore settings sync note:', e));
@@ -597,6 +608,7 @@ export default function App() {
         setCurrentTab={setCurrentTab}
         churchName={appState.churchName}
         serviceName={appState.serviceName}
+        patronPriests={appState.patronPriests}
         unclaimedRewardsCount={unclaimedRewardsCount}
         todayBirthdaysCount={todayBirthdays.length}
         currentUser={currentUser}
@@ -746,6 +758,7 @@ export default function App() {
                   pointsRules={appState.pointsRules}
                   churchName={appState.churchName}
                   serviceName={appState.serviceName}
+                  patronPriests={appState.patronPriests}
                   isCloudConnected={isCloudConnected}
                   onUpdateRewardTiers={handleUpdateRewardTiers}
                   onUpdatePointsRules={handleUpdatePointsRules}
@@ -877,6 +890,7 @@ export default function App() {
           competitionLogs={appState.competitionLogs}
           churchName={appState.churchName}
           serviceName={appState.serviceName}
+          patronPriests={appState.patronPriests}
           initialTitle={achievementModalData.title || 'بطل الشهر'}
           onClose={() => setAchievementModalData(null)}
         />

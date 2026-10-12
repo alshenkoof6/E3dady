@@ -111,6 +111,7 @@ export function subscribeToDatabase(
     settings?: {
       churchName: string;
       serviceName: string;
+      patronPriests?: string;
       pointsRules?: PointsRuleConfig;
       rewardTiers?: RewardTier[];
     };
@@ -196,6 +197,7 @@ export function subscribeToDatabase(
           settings: {
             churchName: d.churchName,
             serviceName: d.serviceName,
+            patronPriests: d.patronPriests,
             pointsRules: d.pointsRules,
             rewardTiers: d.rewardTiers,
           },
@@ -295,6 +297,7 @@ export async function syncCompetitionToFirestore(comp: CompetitionLog): Promise<
 export async function syncSettingsToFirestore(settings: {
   churchName: string;
   serviceName: string;
+  patronPriests?: string;
   pointsRules: PointsRuleConfig;
   rewardTiers: RewardTier[];
 }): Promise<void> {
@@ -316,6 +319,7 @@ export async function uploadFullStateToFirestore(state: AppState): Promise<void>
   batch.set(settingsRef, sanitizeForFirestore({
     churchName: state.churchName,
     serviceName: state.serviceName,
+    patronPriests: state.patronPriests,
     pointsRules: state.pointsRules,
     rewardTiers: state.rewardTiers,
   }));

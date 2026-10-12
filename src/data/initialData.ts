@@ -80,8 +80,9 @@ export const initialServants: ServantAccount[] = [
 ];
 
 export const initialAppState: AppState = {
-  churchName: 'خدمة المرحلة الإعدادية في الكنيسة',
-  serviceName: 'منصة تسجيل الحضور والمكافآت',
+  churchName: 'كنيسة السيدة العذراء مريم بسدود',
+  serviceName: 'خدمة المرحلة الإعدادية',
+  patronPriests: 'تحت رعاية: أبونا مكسيموس يوسف • أبونا دوماديوس صليب',
   students: initialStudents,
   sessions: initialSessions,
   rewardTiers: initialRewardTiers,

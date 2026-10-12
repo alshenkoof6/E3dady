@@ -28,8 +28,9 @@ interface AchievementCardModalProps {
   pointsRules: PointsRuleConfig;
   rewardTiers: RewardTier[];
   competitionLogs: CompetitionLog[];
-  churchName: string;
-  serviceName: string;
+  churchName?: string;
+  serviceName?: string;
+  patronPriests?: string;
   initialTitle?: AchievementTitleType;
   onClose: () => void;
 }
@@ -96,8 +97,9 @@ export const AchievementCardModal: React.FC<AchievementCardModalProps> = ({
   pointsRules,
   rewardTiers,
   competitionLogs,
-  churchName,
-  serviceName,
+  churchName = 'كنيسة السيدة العذراء مريم بسدود',
+  serviceName = 'خدمة المرحلة الإعدادية',
+  patronPriests = 'تحت رعاية: أبونا مكسيموس يوسف • أبونا دوماديوس صليب',
   initialTitle = 'بطل الشهر',
   onClose,
 }) => {
@@ -187,25 +189,32 @@ export const AchievementCardModal: React.FC<AchievementCardModalProps> = ({
       drawCorner(W - padding - 18, H - padding - 18, Math.PI);
       drawCorner(padding + 18, H - padding - 18, (Math.PI * 3) / 2);
 
-      // 4. Church Header Title
+      // 4. Church Header Title & Priests Patronage
       ctx.textAlign = 'center';
       ctx.direction = 'rtl';
 
       // Cross motif on top
       ctx.fillStyle = '#f59e0b';
       ctx.font = '28px serif';
-      ctx.fillText('✟', W / 2, 110);
+      ctx.fillText('✟', W / 2, 102);
 
-      ctx.fillStyle = '#fef3c7';
-      ctx.font = 'bold 30px "Cairo", sans-serif';
-      ctx.fillText(churchName || 'كنيسة القديسين', W / 2, 155);
+      // Church Name
+      ctx.fillStyle = '#fef08a';
+      ctx.font = 'bold 31px "Cairo", sans-serif';
+      ctx.fillText(churchName || 'كنيسة السيدة العذراء مريم بسدود', W / 2, 144);
 
+      // Service Name & Family
       ctx.fillStyle = '#cbd5e1';
-      ctx.font = '500 22px "Cairo", sans-serif';
-      ctx.fillText(`${serviceName || 'خدمة المرحلة الإعدادية'} • ${student.family}`, W / 2, 195);
+      ctx.font = '600 20px "Cairo", sans-serif';
+      ctx.fillText(`${serviceName || 'خدمة المرحلة الإعدادية'} • ${student.family}`, W / 2, 178);
+
+      // Patron Priests Banner
+      ctx.fillStyle = '#fde68a';
+      ctx.font = 'bold 19px "Cairo", sans-serif';
+      ctx.fillText(patronPriests || 'تحت رعاية: أبونا مكسيموس يوسف • أبونا دوماديوس صليب', W / 2, 210);
 
       // 5. Central Golden Medal Crest
-      const centerY = 370;
+      const centerY = 365;
 
       // Glowing outer circle
       ctx.save();
@@ -355,12 +364,12 @@ export const AchievementCardModal: React.FC<AchievementCardModalProps> = ({
       }
 
       // 11. Footer Signatures & Date
-      const footerY = 1190;
+      const footerY = 1175;
 
       // Right: Date
       ctx.textAlign = 'right';
       ctx.fillStyle = '#94a3b8';
-      ctx.font = 'bold 20px "Cairo", sans-serif';
+      ctx.font = 'bold 19px "Cairo", sans-serif';
       const dateFormatted = new Date().toLocaleDateString('ar-EG', {
         year: 'numeric',
         month: 'long',
@@ -372,11 +381,16 @@ export const AchievementCardModal: React.FC<AchievementCardModalProps> = ({
       ctx.textAlign = 'left';
       ctx.fillText('خدام ومسؤولو مرحلة إعدادي ✟', padding + 40, footerY);
 
-      // Center bottom golden motto
+      // Center: Patron Priests in footer
       ctx.textAlign = 'center';
+      ctx.fillStyle = '#fef08a';
+      ctx.font = 'bold 19px "Cairo", sans-serif';
+      ctx.fillText('برعاية الآباء الكهنة: أبونا مكسيموس يوسف ✟ أبونا دوماديوس صليب', W / 2, footerY + 34);
+
+      // Center bottom golden motto
       ctx.fillStyle = '#f59e0b';
-      ctx.font = 'bold 20px "Cairo", sans-serif';
-      ctx.fillText('«مَعَ الْمَسِيحِ صُلِبْتُ، فَأَحْيَا لاَ أَنَا، بَلِ الْمَسِيحُ يَحْيَا فِيَّ»', W / 2, 1260);
+      ctx.font = 'bold 19px "Cairo", sans-serif';
+      ctx.fillText('«مَعَ الْمَسِيحِ صُلِبْتُ، فَأَحْيَا لاَ أَنَا، بَلِ الْمَسِيحُ يَحْيَا فِيَّ» (غلاطية 2: 20)', W / 2, 1256);
     };
 
     // Render once fonts are ready or immediately
@@ -404,7 +418,7 @@ export const AchievementCardModal: React.FC<AchievementCardModalProps> = ({
     return () => {
       isCancelled = true;
     };
-  }, [selectedTitle, student, stats, churchName, serviceName, monthName]);
+  }, [selectedTitle, student, stats, churchName, serviceName, patronPriests, monthName]);
 
   const handleDownload = () => {
     const canvas = canvasRef.current;
@@ -531,6 +545,14 @@ export const AchievementCardModal: React.FC<AchievementCardModalProps> = ({
           {/* Details & Actions Panel */}
           <div className="lg:col-span-6 space-y-4 text-slate-300">
             <div className="bg-slate-800/70 border border-slate-700 rounded-2xl p-4 space-y-2.5">
+              <div className="flex items-center justify-between text-xs pb-2 border-b border-slate-700/60">
+                <span className="text-slate-400 font-bold">الكنيسة:</span>
+                <span className="font-black text-amber-200 text-xs">{churchName || 'كنيسة السيدة العذراء مريم بسدود'}</span>
+              </div>
+              <div className="flex items-center justify-between text-xs pb-2 border-b border-slate-700/60">
+                <span className="text-slate-400 font-bold">رعاية الآباء:</span>
+                <span className="font-bold text-slate-200 text-[11px]">{patronPriests || 'أبونا مكسيموس يوسف • أبونا دوماديوس صليب'}</span>
+              </div>
               <div className="flex items-center justify-between text-xs">
                 <span className="text-slate-400 font-bold">اسم المخدوم:</span>
                 <span className="font-black text-white text-sm">{student.name}</span>

@@ -25,6 +25,7 @@ interface HeaderProps {
   setCurrentTab: (tab: 'attendance' | 'rewards' | 'leaderboard' | 'reports' | 'students' | 'settings') => void;
   churchName: string;
   serviceName: string;
+  patronPriests?: string;
   unclaimedRewardsCount: number;
   todayBirthdaysCount?: number;
   currentUser: CurrentUser;
@@ -43,6 +44,7 @@ export const Header: React.FC<HeaderProps> = ({
   setCurrentTab,
   churchName,
   serviceName,
+  patronPriests,
   unclaimedRewardsCount,
   todayBirthdaysCount = 0,
   currentUser,
@@ -68,14 +70,14 @@ export const Header: React.FC<HeaderProps> = ({
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-xl sm:text-2xl font-black tracking-tight text-amber-100 font-['Alexandria',sans-serif]">
-                {serviceName}
+                {churchName}
               </h1>
               <span className="text-xs bg-amber-500/20 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-full font-bold">
-                إعدادي
+                {serviceName}
               </span>
             </div>
             <p className="text-xs sm:text-sm text-red-200/90 font-medium mt-0.5">
-              {churchName}
+              {patronPriests || 'تحت رعاية: أبونا مكسيموس يوسف • أبونا دوماديوس صليب'}
             </p>
           </div>
         </div>

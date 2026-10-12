@@ -41,9 +41,15 @@ export function loadAppState(): AppState {
       return initialAppState;
     }
 
+    const loadedChurchName = 
+      !parsed.churchName || parsed.churchName === 'خدمة المرحلة الإعدادية في الكنيسة' || parsed.churchName === 'كنيسة القديسين'
+        ? initialAppState.churchName
+        : parsed.churchName;
+
     return {
-      churchName: parsed.churchName || initialAppState.churchName,
+      churchName: loadedChurchName,
       serviceName: parsed.serviceName || initialAppState.serviceName,
+      patronPriests: parsed.patronPriests || initialAppState.patronPriests,
       students: Array.isArray(parsed.students) ? parsed.students : initialAppState.students,
       sessions: Array.isArray(parsed.sessions) ? parsed.sessions : initialAppState.sessions,
       rewardTiers: Array.isArray(parsed.rewardTiers) ? parsed.rewardTiers : initialAppState.rewardTiers,
