@@ -106,10 +106,17 @@ export const ImportExportModal: React.FC<ImportExportModalProps> = ({
   };
 
   // Copy CSV to clipboard
-  const handleCopyCSV = () => {
-    navigator.clipboard.writeText(generateCSV());
-    setCopySuccess(true);
-    setTimeout(() => setCopySuccess(false), 2000);
+  const handleCopyCSV = async () => {
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(generateCSV());
+      }
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2000);
+    } catch {
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2000);
+    }
   };
 
   // JSON Full Backup download

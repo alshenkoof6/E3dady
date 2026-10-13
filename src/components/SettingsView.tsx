@@ -16,7 +16,11 @@ import {
   Database,
   RefreshCw,
   Calendar,
-  AlertCircle
+  AlertCircle,
+  X,
+  Clock,
+  CheckCircle2,
+  History
 } from 'lucide-react';
 
 interface SettingsViewProps {
@@ -59,6 +63,47 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const [localService, setLocalService] = useState(serviceName);
   const [localPriests, setLocalPriests] = useState(patronPriests);
   const [savedSuccessMessage, setSavedSuccessMessage] = useState(false);
+
+  // Points Cycle & Balance Reset state
+  const [isResetCycleModalOpen, setIsResetCycleModalOpen] = useState(false);
+  const [cycleTitleInput, setCycleTitleInput] = useState(pointsRules.pointsCycleTitle || '');
+  const [cycleStartDateInput, setCycleStartDateInput] = useState(
+    pointsRules.pointsCycleStartDate || new Date().toISOString().split('T')[0]
+  );
+  const [cycleActionMessage, setCycleActionMessage] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    setLocalRules(pointsRules);
+    if (pointsRules.pointsCycleTitle) setCycleTitleInput(pointsRules.pointsCycleTitle);
+    if (pointsRules.pointsCycleStartDate) setCycleStartDateInput(pointsRules.pointsCycleStartDate);
+  }, [pointsRules]);
+
+  const handleStartNewCycle = () => {
+    const updatedRules: PointsRuleConfig = {
+      ...localRules,
+      pointsCycleStartDate: cycleStartDateInput,
+      pointsCycleTitle: cycleTitleInput.trim() || 'دورة جديدة',
+    };
+    setLocalRules(updatedRules);
+    onUpdatePointsRules(updatedRules);
+    setIsResetCycleModalOpen(false);
+    setCycleActionMessage('تم تصفير رصيد النقاط وبدء دورة المسابقة الجديدة بنجاح! يتم الآن احتساب نقاط لوحة الصدارة بدءاً من هذا التاريخ مع الحفاظ على كامل سجلات الحضور السابقة.');
+    setTimeout(() => setCycleActionMessage(null), 6000);
+  };
+
+  const handleCancelCycleReset = () => {
+    if (window.confirm('هل تريد بالتأكيد إلغاء التصفير واسترجاع احتساب جميع النقاط منذ بداية الخدمة؟')) {
+      const updatedRules: PointsRuleConfig = {
+        ...localRules,
+        pointsCycleStartDate: undefined,
+        pointsCycleTitle: undefined,
+      };
+      setLocalRules(updatedRules);
+      onUpdatePointsRules(updatedRules);
+      setCycleActionMessage('تم إلغاء التصفير واستعادة احتساب جميع النقاط التراكمية التاريخية منذ بداية الخدمة.');
+      setTimeout(() => setCycleActionMessage(null), 6000);
+    }
+  };
 
   const handleSaveAll = () => {
     onUpdateRewardTiers(localTiers);
@@ -436,7 +481,182 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         </div>
       </div>
 
-      {/* 4. SESSIONS MANAGEMENT SECTION (حذف وإدارة اللقاءات) */}
+      {/* 4. POINTS CYCLE & RESET SECTION (تصفير رصيد النقاط وبدء دورة مسابقة جديدة) */}
+      <div className="bg-white rounded-3xl border border-slate-200/80 shadow-sm p-6 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-amber-600" />
+              <span>إدارة دورات المسابقة وتصفير رصيد النقاط</span>
+            </h3>
+            <p className="text-xs text-slate-500 mt-0.5">
+              لتوزيع الجوائز عند نهاية فترة معينة (ترم، مسابقة صوم، أو مهرجان) والبدء من جديد مع الحفاظ الكامل على سجلات الحضور.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {localRules.pointsCycleStartDate ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsResetCycleModalOpen(true)}
+                  className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold bg-amber-500 hover:bg-amber-400 text-stone-950 rounded-xl transition shadow-xs cursor-pointer active:scale-95"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>تصفير مجدداً وبدء دورة جديدة</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCancelCycleReset}
+                  className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-xl transition cursor-pointer"
+                  title="استرجاع احتساب كل النقاط منذ بداية الخدمة"
+                >
+                  <History className="w-3.5 h-3.5" />
+                  <span>إلغاء التصفير واسترجاع كل النقاط</span>
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setIsResetCycleModalOpen(true)}
+                className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-stone-950 rounded-xl transition shadow-sm cursor-pointer active:scale-95"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>تصفير رصيد النقاط وبدء دورة جديدة</span>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {cycleActionMessage && (
+          <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center gap-2.5 text-xs text-emerald-900 font-semibold animate-in fade-in">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>{cycleActionMessage}</span>
+          </div>
+        )}
+
+        {/* Current status display */}
+        {localRules.pointsCycleStartDate ? (
+          <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-50 via-orange-50 to-amber-50 border border-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="px-2 py-0.5 rounded-lg bg-amber-500 text-stone-950 font-black text-xs">
+                  دورة نشطة حالياً
+                </span>
+                <span className="font-bold text-slate-900 text-sm">
+                  {localRules.pointsCycleTitle || 'دورة المسابقة الحالية'}
+                </span>
+              </div>
+              <p className="text-xs text-amber-950">
+                بدأ احتساب النقاط من تاريخ: <b className="text-amber-900">{localRules.pointsCycleStartDate}</b>.
+                الترتيب في لوحة الصدارة وكروت الإنجاز يبدأ العد من هذا التاريخ.
+              </p>
+            </div>
+            <div className="text-left sm:text-right shrink-0">
+              <span className="text-[11px] font-bold text-slate-500 block">حالة السجلات التاريخية:</span>
+              <span className="text-xs text-emerald-700 font-bold flex items-center gap-1">
+                <Check className="w-3.5 h-3.5" />
+                محفوظة بالكامل دون حذف
+              </span>
+            </div>
+          </div>
+        ) : (
+          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between text-xs text-slate-600">
+            <div className="flex items-center gap-2">
+              <Clock className="w-4 h-4 text-slate-400" />
+              <span>الوضع الافتراضي مفعل: يتم احتساب النقاط تراكمياً شاملة جميع اللقاءات منذ بداية تدشين الخدمة.</span>
+            </div>
+            <span className="font-bold text-slate-500">حساب شامل مستمر</span>
+          </div>
+        )}
+      </div>
+
+      {/* Modal: Start New Points Cycle */}
+      {isResetCycleModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2 text-amber-600">
+                <RotateCcw className="w-5 h-5" />
+                <h3 className="font-black text-slate-900 text-base">تصفير رصيد النقاط وبدء دورة جديدة</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsResetCycleModalOpen(false)}
+                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-100"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3.5 text-xs">
+              <div>
+                <label className="block font-bold text-slate-800 mb-1">
+                  اسم أو عنوان الدورة / المسابقة:
+                </label>
+                <input
+                  type="text"
+                  placeholder="مثال: دورة الصوم الكبير 2026 أو مسابقة الصيف"
+                  value={cycleTitleInput}
+                  onChange={(e) => setCycleTitleInput(e.target.value)}
+                  className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-800 mb-1">
+                  تاريخ بدء احتساب النقاط الجديدة (تاريخ التصفير):
+                </label>
+                <input
+                  type="date"
+                  value={cycleStartDateInput}
+                  onChange={(e) => setCycleStartDateInput(e.target.value)}
+                  className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500"
+                />
+                <p className="text-[11px] text-slate-500 mt-1">
+                  سيتم بدء احتساب نقاط الحضور والأنشطة والمسابقات التي تقع في هذا التاريخ أو بعده.
+                </p>
+              </div>
+
+              <div className="p-3 bg-amber-50 border border-amber-200/80 rounded-2xl text-[11px] text-amber-950 space-y-1 leading-relaxed">
+                <p className="font-bold flex items-center gap-1 text-amber-900">
+                  <AlertCircle className="w-3.5 h-3.5 text-amber-700" />
+                  <span>تأكيد أمان البيانات:</span>
+                </p>
+                <p>
+                  • لا يتم حذف أي طالب أو سجلات غياب وحضور سابقة.
+                </p>
+                <p>
+                  • تبدأ لوحة الصدارة بحساب النقاط من الصفر للجميع لمنح فرصة عادلة.
+                </p>
+                <p>
+                  • يمكنك في أي وقت إلغاء التصفير واسترجاع النقاط القديمة بضغطة زر.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setIsResetCycleModalOpen(false)}
+                className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition"
+              >
+                إلغاء
+              </button>
+              <button
+                type="button"
+                onClick={handleStartNewCycle}
+                className="flex items-center gap-1.5 px-4 py-2 text-xs font-black bg-amber-500 hover:bg-amber-400 text-stone-950 rounded-xl transition shadow-md cursor-pointer active:scale-95"
+              >
+                <Check className="w-3.5 h-3.5" />
+                <span>تأكيد التصفير وبدء الدورة</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 5. SESSIONS MANAGEMENT SECTION (حذف وإدارة اللقاءات) */}
       <div className="bg-white rounded-3xl border border-slate-200/80 shadow-sm p-6 space-y-4">
         <div>
           <h3 className="text-base font-black text-slate-900 flex items-center gap-2">

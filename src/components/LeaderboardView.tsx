@@ -43,7 +43,7 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
 }) => {
   const [selectedGrade, setSelectedGrade] = useState<GradeLevel | 'الكل'>('الكل');
   const [selectedGender, setSelectedGender] = useState<Gender | 'الكل'>('الكل');
-  const [sortBy, setSortBy] = useState<'points' | 'streak' | 'rate'>('points');
+  const [sortBy, setSortBy] = useState<'points' | 'allTime' | 'streak' | 'rate'>('points');
   const [searchQuery, setSearchQuery] = useState('');
 
   // Calculate stats for all students
@@ -70,6 +70,8 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
       .sort((a, b) => {
         if (sortBy === 'points') {
           return b.totalPoints - a.totalPoints || b.currentStreak - a.currentStreak;
+        } else if (sortBy === 'allTime') {
+          return b.allTimePoints - a.allTimePoints || b.totalPoints - a.totalPoints;
         } else if (sortBy === 'streak') {
           return b.currentStreak - a.currentStreak || b.totalPoints - a.totalPoints;
         } else {
@@ -83,6 +85,33 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
 
   return (
     <div className="space-y-6">
+      {/* Active Points Cycle Banner */}
+      {pointsRules.pointsCycleStartDate && (
+        <div className="bg-gradient-to-r from-amber-50 via-orange-50 to-amber-50 border border-amber-200/90 rounded-3xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-xs animate-in fade-in">
+          <div className="flex items-center gap-3.5">
+            <div className="w-11 h-11 rounded-2xl bg-amber-500 text-stone-950 flex items-center justify-center font-black text-xl shrink-0 shadow-xs">
+              🏆
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="bg-amber-500 text-stone-950 text-[11px] font-black px-2 py-0.5 rounded-lg">
+                  دورة مسابقة نشطة
+                </span>
+                <span className="font-black text-amber-950 text-sm">
+                  {pointsRules.pointsCycleTitle || 'دورة جديدة'}
+                </span>
+              </div>
+              <p className="text-amber-900 text-xs mt-1 font-medium leading-relaxed">
+                تم تصفير عداد النقاط وبدء احتساب نقاط التنافس والجوائز من تاريخ <b>{pointsRules.pointsCycleStartDate}</b> لمنح فرصة عادلة للجميع. (سجلات الحضور التاريخية محفوظة بالكامل).
+              </p>
+            </div>
+          </div>
+          <span className="self-start sm:self-auto px-3.5 py-1.5 bg-amber-200/90 text-amber-950 font-black rounded-xl text-xs shrink-0 border border-amber-300">
+            تاريخ البدء: {pointsRules.pointsCycleStartDate}
+          </span>
+        </div>
+      )}
+
       {/* Header & Filters */}
       <div className="bg-white rounded-3xl border border-slate-200/80 shadow-sm p-5 space-y-4">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
@@ -97,7 +126,7 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
           </div>
 
           {/* Sort By Toggle */}
-          <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-2xl border border-slate-200 self-start md:self-auto">
+          <div className="flex flex-wrap items-center gap-1.5 bg-slate-100 p-1 rounded-2xl border border-slate-200 self-start md:self-auto">
             <span className="text-xs font-bold text-slate-500 px-2">الترتيب حسب:</span>
             <button
               onClick={() => setSortBy('points')}
@@ -105,8 +134,18 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
                 sortBy === 'points' ? 'bg-amber-500 text-stone-950 shadow-xs' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              النقاط الكلية
+              {pointsRules.pointsCycleStartDate ? 'نقاط الدورة الحالية 🏆' : 'النقاط الكلية'}
             </button>
+            {pointsRules.pointsCycleStartDate && (
+              <button
+                onClick={() => setSortBy('allTime')}
+                className={`px-3 py-1 rounded-xl text-xs font-bold transition ${
+                  sortBy === 'allTime' ? 'bg-amber-500 text-stone-950 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                النقاط التراكمية (تاريخياً)
+              </button>
+            )}
             <button
               onClick={() => setSortBy('streak')}
               className={`px-3 py-1 rounded-xl text-xs font-bold transition ${
@@ -212,8 +251,12 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
 
               <div className="bg-white rounded-2xl p-3 border border-slate-200/80 flex items-center justify-around">
                 <div>
-                  <span className="text-xs text-slate-400 block font-semibold">النقاط</span>
-                  <span className="text-xl font-black text-slate-800">{top3[1].totalPoints}</span>
+                  <span className="text-xs text-slate-400 block font-semibold">
+                    {sortBy === 'allTime' ? 'النقاط التاريخية' : (pointsRules.pointsCycleStartDate ? 'نقاط الدورة' : 'النقاط')}
+                  </span>
+                  <span className="text-xl font-black text-slate-800">
+                    {sortBy === 'allTime' ? top3[1].allTimePoints : top3[1].totalPoints}
+                  </span>
                 </div>
                 <div className="h-6 w-px bg-slate-200"></div>
                 <div>
@@ -275,8 +318,12 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
 
               <div className="bg-white/90 backdrop-blur-xs rounded-2xl p-3 border border-amber-200 shadow-xs flex items-center justify-around">
                 <div>
-                  <span className="text-xs text-slate-500 block font-semibold">إجمالي النقاط</span>
-                  <span className="text-2xl font-black text-amber-700">{top3[0].totalPoints}</span>
+                  <span className="text-xs text-slate-500 block font-semibold">
+                    {sortBy === 'allTime' ? 'النقاط التاريخية' : (pointsRules.pointsCycleStartDate ? 'نقاط الدورة' : 'إجمالي النقاط')}
+                  </span>
+                  <span className="text-2xl font-black text-amber-700">
+                    {sortBy === 'allTime' ? top3[0].allTimePoints : top3[0].totalPoints}
+                  </span>
                 </div>
                 <div className="h-7 w-px bg-amber-200"></div>
                 <div>
@@ -333,8 +380,12 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
 
               <div className="bg-white rounded-2xl p-3 border border-stone-200/80 flex items-center justify-around">
                 <div>
-                  <span className="text-xs text-slate-400 block font-semibold">النقاط</span>
-                  <span className="text-xl font-black text-slate-800">{top3[2].totalPoints}</span>
+                  <span className="text-xs text-slate-400 block font-semibold">
+                    {sortBy === 'allTime' ? 'النقاط التاريخية' : (pointsRules.pointsCycleStartDate ? 'نقاط الدورة' : 'النقاط')}
+                  </span>
+                  <span className="text-xl font-black text-slate-800">
+                    {sortBy === 'allTime' ? top3[2].allTimePoints : top3[2].totalPoints}
+                  </span>
                 </div>
                 <div className="h-6 w-px bg-stone-200"></div>
                 <div>
@@ -382,7 +433,9 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
                 <th className="py-3 px-4 text-center">أفضل تتابع</th>
                 <th className="py-3 px-4 text-center">نسبة الحضور</th>
                 <th className="py-3 px-4 text-center">الهدايا الممنوحة</th>
-                <th className="py-3 px-4 text-left font-black text-amber-900">إجمالي النقاط</th>
+                <th className="py-3 px-4 text-left font-black text-amber-900">
+                  {sortBy === 'allTime' ? 'النقاط التاريخية' : (pointsRules.pointsCycleStartDate ? 'نقاط الدورة' : 'إجمالي النقاط')}
+                </th>
                 <th className="py-3 px-4 text-center" title="متاح للمراكز الثلاثة الأولى">كارت التوب 3 🏆</th>
               </tr>
             </thead>
@@ -469,7 +522,7 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
 
                     <td className="py-3 px-4 text-left font-black text-sm text-amber-900">
                       <span className="bg-amber-100 px-2.5 py-1 rounded-xl border border-amber-300">
-                        {item.totalPoints} نقطة
+                        {sortBy === 'allTime' ? item.allTimePoints : item.totalPoints} نقطة
                       </span>
                     </td>
 

@@ -268,9 +268,13 @@ export const StudentPortalView: React.FC<StudentPortalViewProps> = ({
           <div className="w-10 h-10 rounded-2xl bg-amber-100 text-amber-800 flex items-center justify-center mx-auto mb-2">
             <Award className="w-5 h-5 text-amber-600" />
           </div>
-          <span className="text-xs font-bold text-amber-800 block">رصيد نقاطك الكلي</span>
+          <span className="text-xs font-bold text-amber-800 block">
+            {stats.isCycleActive ? 'رصيد الدورة الحالية' : 'رصيد نقاطك الكلي'}
+          </span>
           <span className="text-3xl font-black text-amber-950 mt-1 block">{stats.totalPoints}</span>
-          <span className="text-[10px] text-amber-700 font-semibold">نقطة تميز</span>
+          <span className="text-[10px] text-amber-700 font-semibold block">
+            {stats.isCycleActive ? `نقطة تميز (الكلي: ${stats.allTimePoints})` : 'نقطة تميز'}
+          </span>
         </div>
 
         {/* Current Streak */}

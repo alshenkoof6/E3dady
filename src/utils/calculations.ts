@@ -10,6 +10,10 @@ export interface StudentCalculatedStats {
   totalSessions: number;
   attendanceRate: number; // percentage 0 - 100
   totalPoints: number;
+  allTimePoints: number;
+  isCycleActive: boolean;
+  cycleStartDate?: string;
+  cycleTitle?: string;
   pointsBreakdown: {
     attendance: number;
     prayer: number;
@@ -41,6 +45,9 @@ export function calculateStudentStats(
     (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
   );
 
+  const cycleStartDate = pointsRules.pointsCycleStartDate;
+  const isCycleActive = Boolean(cycleStartDate);
+
   let currentStreak = 0;
   let bestStreak = 0;
   let runningStreak = 0;
@@ -57,14 +64,21 @@ export function calculateStudentStats(
   let sessionCustomPoints = 0;
   let totalPenalties = 0;
 
+  let allTimeRaw = 0;
+
   // Track session by session from earliest to latest
   sortedSessions.forEach((session) => {
     const rec = session.records[student.id];
     if (!rec) return; // not enrolled or not recorded yet
 
+    const inCycle = !cycleStartDate || session.date >= cycleStartDate;
+
     // Check session penalty points regardless of status
     if (rec.bonus?.penaltyPoints && rec.bonus.penaltyPoints > 0) {
-      totalPenalties += rec.bonus.penaltyPoints;
+      allTimeRaw -= rec.bonus.penaltyPoints;
+      if (inCycle) {
+        totalPenalties += rec.bonus.penaltyPoints;
+      }
     }
 
     if (rec.status === 'present') {
@@ -74,17 +88,27 @@ export function calculateStudentStats(
         bestStreak = runningStreak;
       }
 
-      // Add points
-      attendancePoints += pointsRules.attendanceBase;
-      if (rec.bonus.prayer) prayerPoints += pointsRules.prayer;
-      if (rec.bonus.liturgy) liturgyPoints += pointsRules.liturgy;
-      if (rec.bonus.verse) versePoints += pointsRules.verse;
-      if (rec.bonus.participation) participationPoints += pointsRules.participation;
-      if (rec.bonus.customPoints) {
-        if (rec.bonus.customPoints < 0) {
-          totalPenalties += Math.abs(rec.bonus.customPoints);
-        } else {
-          sessionCustomPoints += rec.bonus.customPoints;
+      // Add points for all-time
+      allTimeRaw += pointsRules.attendanceBase;
+      if (rec.bonus.prayer) allTimeRaw += pointsRules.prayer;
+      if (rec.bonus.liturgy) allTimeRaw += pointsRules.liturgy;
+      if (rec.bonus.verse) allTimeRaw += pointsRules.verse;
+      if (rec.bonus.participation) allTimeRaw += pointsRules.participation;
+      if (rec.bonus.customPoints) allTimeRaw += rec.bonus.customPoints;
+
+      // Add points for active cycle
+      if (inCycle) {
+        attendancePoints += pointsRules.attendanceBase;
+        if (rec.bonus.prayer) prayerPoints += pointsRules.prayer;
+        if (rec.bonus.liturgy) liturgyPoints += pointsRules.liturgy;
+        if (rec.bonus.verse) versePoints += pointsRules.verse;
+        if (rec.bonus.participation) participationPoints += pointsRules.participation;
+        if (rec.bonus.customPoints) {
+          if (rec.bonus.customPoints < 0) {
+            totalPenalties += Math.abs(rec.bonus.customPoints);
+          } else {
+            sessionCustomPoints += rec.bonus.customPoints;
+          }
         }
       }
 
@@ -106,10 +130,14 @@ export function calculateStudentStats(
   let competitionsPoints = 0;
   competitionLogs.forEach((comp) => {
     if (comp.awardedStudentIds.includes(student.id)) {
-      if (comp.points < 0 || comp.type === 'penalty') {
-        totalPenalties += Math.abs(comp.points);
-      } else {
-        competitionsPoints += comp.points;
+      allTimeRaw += comp.points;
+      const inCycle = !cycleStartDate || comp.date >= cycleStartDate;
+      if (inCycle) {
+        if (comp.points < 0 || comp.type === 'penalty') {
+          totalPenalties += Math.abs(comp.points);
+        } else {
+          competitionsPoints += comp.points;
+        }
       }
     }
   });
@@ -119,7 +147,11 @@ export function calculateStudentStats(
   student.rewardsClaimed.forEach((claim) => {
     const tier = rewardTiers.find((t) => t.id === claim.tierId);
     if (tier && tier.bonusPointsReward) {
-      tierRewardsPoints += tier.bonusPointsReward;
+      allTimeRaw += tier.bonusPointsReward;
+      const inCycle = !cycleStartDate || claim.date >= cycleStartDate;
+      if (inCycle) {
+        tierRewardsPoints += tier.bonusPointsReward;
+      }
     }
   });
 
@@ -135,6 +167,7 @@ export function calculateStudentStats(
     totalPenalties;
 
   const totalPoints = Math.max(0, rawTotal);
+  const allTimePoints = Math.max(0, allTimeRaw);
 
   const totalSessions = totalPresent + totalAbsent + totalExcused;
   const attendanceRate = totalSessions > 0 ? Math.round((totalPresent / totalSessions) * 100) : 0;
@@ -173,6 +206,10 @@ export function calculateStudentStats(
     totalSessions,
     attendanceRate,
     totalPoints,
+    allTimePoints,
+    isCycleActive,
+    cycleStartDate: pointsRules.pointsCycleStartDate,
+    cycleTitle: pointsRules.pointsCycleTitle,
     pointsBreakdown: {
       attendance: attendancePoints,
       prayer: prayerPoints,

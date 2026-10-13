@@ -75,6 +75,8 @@ export interface PointsRuleConfig {
   participation: number;     // نقاط المشاركة والتفاعل
   excusedPenalty: number;    // 0 = no penalty
   streakPreserveOnExcuse: boolean; // هل العذر يحفظ التتابع؟
+  pointsCycleStartDate?: string; // تاريخ بدء دورة المسابقة الحالية (YYYY-MM-DD) لتصفير رصيد النقاط
+  pointsCycleTitle?: string;     // مسمى دورة المسابقة الحالية (مثل: "دورة الخريف 2026")
 }
 
 export interface CompetitionLog {

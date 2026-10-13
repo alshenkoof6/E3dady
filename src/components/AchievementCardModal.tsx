@@ -429,46 +429,72 @@ export const AchievementCardModal: React.FC<AchievementCardModalProps> = ({
     link.click();
   };
 
+  const getCanvasBlob = (canvas: HTMLCanvasElement): Promise<Blob | null> => {
+    return new Promise((resolve) => {
+      canvas.toBlob((blob) => resolve(blob), 'image/png');
+    });
+  };
+
   const handleShare = async () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    if (navigator.share && navigator.canShare) {
-      try {
-        canvas.toBlob(async (blob) => {
-          if (!blob) {
-            handleDownload();
-            return;
-          }
-          const file = new File(
-            [blob], 
-            `وسام-${selectedTitle}-${student.name.replace(/\s+/g, '_')}.png`, 
-            { type: 'image/png' }
-          );
+    try {
+      if (typeof navigator !== 'undefined' && navigator.share) {
+        const blob = await getCanvasBlob(canvas);
+        if (!blob) {
+          handleDownload();
+          return;
+        }
 
-          if (navigator.canShare({ files: [file] })) {
+        const file = new File(
+          [blob], 
+          `وسام-${selectedTitle}-${student.name.replace(/\s+/g, '_')}.png`, 
+          { type: 'image/png' }
+        );
+
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          try {
             await navigator.share({
               title: `وسام ${selectedTitle} - ${student.name}`,
               text: `فخورين بالبطل ${student.name} لحصوله على وسام «${selectedTitle}» في خدمة إعدادي! 🎉`,
               files: [file],
             });
-          } else {
+            return;
+          } catch (shareErr: unknown) {
+            const err = shareErr as { name?: string; message?: string } | undefined;
+            // User intentionally canceled or closed share sheet: do not error or download
+            if (
+              err?.name === 'AbortError' ||
+              err?.message?.toLowerCase().includes('cancel') ||
+              err?.message?.toLowerCase().includes('abort')
+            ) {
+              return;
+            }
+            // If sharing failed due to unsupported file format or browser, fallback to download
             handleDownload();
+            return;
           }
-        });
-        return;
-      } catch (e) {
-        // Fallback to download
+        }
       }
+      handleDownload();
+    } catch {
+      handleDownload();
     }
-
-    handleDownload();
   };
 
-  const handleCopyLink = () => {
-    setIsCopied(true);
-    navigator.clipboard?.writeText(window.location.href);
-    setTimeout(() => setIsCopied(false), 2000);
+  const handleCopyLink = async () => {
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(window.location.href);
+      }
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2000);
+    } catch {
+      // In case clipboard permissions are denied in iframe
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2000);
+    }
   };
 
   return (

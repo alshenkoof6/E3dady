@@ -205,8 +205,15 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
         {/* Stats Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 my-5">
           <div className="bg-amber-50/70 border border-amber-200 rounded-2xl p-3 text-center">
-            <span className="text-[11px] font-bold text-amber-800 block">إجمالي النقاط</span>
+            <span className="text-[11px] font-bold text-amber-800 block">
+              {stats.isCycleActive ? 'نقاط الدورة الحالية' : 'إجمالي النقاط'}
+            </span>
             <span className="text-2xl font-black text-amber-900 mt-0.5 block">{stats.totalPoints}</span>
+            {stats.isCycleActive && (
+              <span className="text-[10px] text-amber-700 font-semibold block mt-0.5">
+                (الكلي تاريخياً: {stats.allTimePoints})
+              </span>
+            )}
           </div>
 
           <div className="bg-blue-50/70 border border-blue-200 rounded-2xl p-3 text-center">
