@@ -34,7 +34,9 @@ import {
   Cake,
   Lock,
   ShieldCheck,
-  AlertTriangle
+  AlertTriangle,
+  Trash2,
+  AlertCircle
 } from 'lucide-react';
 import { isBirthdayToday } from '../utils/birthday';
 
@@ -71,6 +73,7 @@ interface AttendanceViewProps {
   onDeliverReward: (student: Student, tier: RewardTier) => void;
   onOpenAddStudent?: () => void;
   onOpenImportExport?: () => void;
+  onDeleteSession?: (sessionId: string) => void;
 }
 
 export const AttendanceView: React.FC<AttendanceViewProps> = ({
@@ -91,6 +94,7 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
   onDeliverReward,
   onOpenAddStudent,
   onOpenImportExport,
+  onDeleteSession,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedGrade, setSelectedGrade] = useState<GradeLevel | 'الكل'>('الكل');
@@ -110,6 +114,9 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
   const [penaltyTarget, setPenaltyTarget] = useState<{ student: Student; record: StudentAttendanceRecord } | null>(null);
   const [penaltyPointsInput, setPenaltyPointsInput] = useState<number>(5);
   const [penaltyReasonInput, setPenaltyReasonInput] = useState<string>('استخدام الموبايل أثناء الصلاة أو الدرس');
+
+  // Delete session modal state
+  const [sessionToDelete, setSessionToDelete] = useState<ServiceSession | null>(null);
 
   // Find active session
   const activeSession = useMemo(() => {
@@ -414,13 +421,26 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
             </div>
 
             {isServant && (
-              <button
-                onClick={() => setIsCreatingSession(true)}
-                className="flex items-center gap-1.5 px-3.5 py-2 bg-red-900 hover:bg-red-800 text-white rounded-2xl text-xs sm:text-sm font-bold transition shadow-sm active:scale-95"
-              >
-                <Plus className="w-4 h-4 text-amber-400" />
-                <span>لقاء جديد</span>
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setIsCreatingSession(true)}
+                  className="flex items-center gap-1.5 px-3.5 py-2 bg-red-900 hover:bg-red-800 text-white rounded-2xl text-xs sm:text-sm font-bold transition shadow-sm active:scale-95"
+                >
+                  <Plus className="w-4 h-4 text-amber-400" />
+                  <span>لقاء جديد</span>
+                </button>
+
+                {onDeleteSession && (
+                  <button
+                    onClick={() => setSessionToDelete(activeSession)}
+                    className="flex items-center gap-1.5 px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-2xl text-xs font-bold transition active:scale-95"
+                    title={`حذف لقاء ${activeSession.title} (${activeSession.date})`}
+                  >
+                    <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                    <span className="hidden sm:inline">حذف اللقاء</span>
+                  </button>
+                )}
+              </div>
             )}
           </div>
         </div>
@@ -1238,6 +1258,81 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
                   <span>تطبيق الخصم (-{penaltyPointsInput})</span>
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Modal for Confirming Session Deletion */}
+      {sessionToDelete && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-rose-200 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center gap-3 pb-3 border-b border-slate-100 mb-4">
+              <div className="w-12 h-12 rounded-2xl bg-rose-100 text-rose-700 flex items-center justify-center font-black shrink-0">
+                <Trash2 className="w-6 h-6 text-rose-600" />
+              </div>
+              <div>
+                <h3 className="text-base font-black text-slate-900">
+                  حذف لقاء الخدمة
+                </h3>
+                <p className="text-xs text-rose-600 font-semibold">
+                  تحذير: لا يمكن التراجع عن هذا الإجراء
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-3 mb-5">
+              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3.5 space-y-1.5 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-slate-500 font-bold">تاريخ اللقاء:</span>
+                  <span className="font-black text-slate-800">{sessionToDelete.date}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500 font-bold">عنوان اللقاء:</span>
+                  <span className="font-black text-slate-800">{sessionToDelete.title}</span>
+                </div>
+                {sessionToDelete.speakerServant && (
+                  <div className="flex justify-between">
+                    <span className="text-slate-500 font-bold">خادم الدرس:</span>
+                    <span className="font-bold text-slate-800">{sessionToDelete.speakerServant}</span>
+                  </div>
+                )}
+                <div className="flex justify-between pt-1 border-t border-slate-200/80">
+                  <span className="text-slate-500 font-bold">عدد السجلات المسجلة:</span>
+                  <span className="font-bold text-amber-900 bg-amber-100 px-2 py-0.5 rounded-lg">
+                    {Object.keys(sessionToDelete.records || {}).length} مخدوم
+                  </span>
+                </div>
+              </div>
+
+              <div className="bg-rose-50 border border-rose-200 rounded-2xl p-3 text-xs text-rose-800 flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                <span>
+                  إذا تم إلغاء اللقاء في الحقيقة، سيؤدي حذفه إلى مسح سجل حضور هذا اليوم ونقاطه، مع إعادة حساب تتابع الحضور وبطولات الشهر بناءً على اللقاءات المتبقية فقط.
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setSessionToDelete(null)}
+                className="px-4 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition cursor-pointer"
+              >
+                إلغاء التراجع
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (onDeleteSession && sessionToDelete) {
+                    onDeleteSession(sessionToDelete.id);
+                  }
+                  setSessionToDelete(null);
+                }}
+                className="px-5 py-2.5 text-xs font-black bg-rose-600 hover:bg-rose-500 text-white rounded-xl transition shadow-md shadow-rose-600/25 flex items-center gap-1.5 cursor-pointer"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>نعم، احذف اللقاء نهائياً</span>
+              </button>
             </div>
           </div>
         </div>

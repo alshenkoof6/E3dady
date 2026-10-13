@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { 
   Student, 
   ServiceSession, 
@@ -7,6 +7,7 @@ import {
   CompetitionLog 
 } from '../types';
 import { calculateStudentStats } from '../utils/calculations';
+import { getStudentMonthlyTop3Info } from '../utils/monthlyCalculations';
 import { 
   Flame, 
   Award, 
@@ -26,12 +27,15 @@ import {
   TrendingUp,
   ShieldAlert,
   Cake,
-  AlertTriangle
+  AlertTriangle,
+  Lock,
+  Crown
 } from 'lucide-react';
 import { isBirthdayToday, calculateAge, formatBirthDateArabic } from '../utils/birthday';
 
 interface StudentPortalViewProps {
   student: Student;
+  allStudents?: Student[];
   sessions: ServiceSession[];
   pointsRules: PointsRuleConfig;
   rewardTiers: RewardTier[];
@@ -45,6 +49,7 @@ interface StudentPortalViewProps {
 
 export const StudentPortalView: React.FC<StudentPortalViewProps> = ({
   student,
+  allStudents = [],
   sessions,
   pointsRules,
   rewardTiers,
@@ -56,6 +61,18 @@ export const StudentPortalView: React.FC<StudentPortalViewProps> = ({
   onOpenAchievementCard,
 }) => {
   const stats = calculateStudentStats(student, sessions, pointsRules, competitionLogs, rewardTiers);
+
+  // Top 3 Monthly Standing Calculation
+  const top3Status = useMemo(() => {
+    const list = allStudents.length > 0 ? allStudents : [student];
+    return getStudentMonthlyTop3Info(
+      student.id,
+      list,
+      sessions,
+      pointsRules,
+      competitionLogs
+    );
+  }, [student.id, allStudents, sessions, pointsRules, competitionLogs]);
 
   // Sorted sessions descending
   const sortedSessions = [...sessions].sort(
@@ -165,35 +182,82 @@ export const StudentPortalView: React.FC<StudentPortalViewProps> = ({
         </div>
       </div>
 
-      {/* Social Achievement Card Banner */}
-      {onOpenAchievementCard && (
-        <div className="bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 rounded-3xl p-5 text-stone-950 shadow-lg shadow-amber-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-amber-300">
+      {/* Social Achievement Card Banner - Exclusive for Monthly Top 3 */}
+      {top3Status.isTop3 ? (
+        <div className="bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 rounded-3xl p-5 text-stone-950 shadow-lg shadow-amber-500/25 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-2 border-amber-300 animate-in fade-in duration-300">
           <div className="flex items-center gap-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-stone-950 text-amber-400 flex items-center justify-center font-black text-2xl shrink-0 shadow-md">
-              👑
+            <div className="w-14 h-14 rounded-2xl bg-stone-950 text-amber-400 flex items-center justify-center font-black text-2xl shrink-0 shadow-md ring-2 ring-amber-300/60">
+              {top3Status.rank === 1 ? '🥇' : top3Status.rank === 2 ? '🥈' : '🥉'}
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs bg-stone-950 text-amber-300 px-2 py-0.5 rounded-full font-black">
-                  جديد 📲
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs bg-stone-950 text-amber-300 px-2.5 py-0.5 rounded-full font-black flex items-center gap-1">
+                  <Crown className="w-3.5 h-3.5 fill-amber-300 text-amber-300" />
+                  <span>
+                    المركز {top3Status.rank === 1 ? 'الأول 🥇' : top3Status.rank === 2 ? 'الثاني 🥈' : 'الثالث 🥉'} • شهر {top3Status.monthNameArabic}
+                  </span>
                 </span>
-                <h3 className="font-black text-white text-base sm:text-lg">
-                  وسامك التكريمي وبطاقة الإنجاز جاهزة للمشاركة!
-                </h3>
+                <span className="text-xs bg-amber-200/90 text-amber-950 font-bold px-2 py-0.5 rounded-full">
+                  وسام معتمد 🏆
+                </span>
               </div>
+              <h3 className="font-black text-white text-base sm:text-lg mt-1">
+                مبروك! أنت من أبطال المراكز الثلاثة الأولى لشهر {top3Status.monthNameArabic}!
+              </h3>
               <p className="text-xs text-amber-100 font-medium mt-0.5">
-                احصل على صورتك التكريمية الفخمة بألقاب (بطل الشهر - بطل التتابع الذهبي - أفضل قارئ للإنجيل) وشاركها على واتساب والستوري.
+                تأهلت للحصول على كارت الإنجاز التكريمي الرسمي باسمك ورصيدك ({top3Status.monthlyPoints} نقطة) لمشاركته على السوشيال ميديا وواتساب.
               </p>
             </div>
           </div>
 
-          <button
-            onClick={onOpenAchievementCard}
-            className="px-5 py-2.5 bg-stone-950 hover:bg-stone-900 text-amber-300 font-black text-xs sm:text-sm rounded-2xl transition shadow-md flex items-center justify-center gap-2 shrink-0 active:scale-95 cursor-pointer border border-amber-400/40"
-          >
-            <Award className="w-4 h-4 text-amber-400" />
-            <span>استخراج بطاقتي ومشاركتها 📲</span>
-          </button>
+          {onOpenAchievementCard && (
+            <button
+              onClick={onOpenAchievementCard}
+              className="px-5 py-3 bg-stone-950 hover:bg-stone-900 text-amber-300 font-black text-xs sm:text-sm rounded-2xl transition shadow-xl flex items-center justify-center gap-2 shrink-0 active:scale-95 cursor-pointer border border-amber-400/50 hover:border-amber-300"
+            >
+              <Award className="w-4 h-4 text-amber-400" />
+              <span>استخراج كارت الإنجاز 📲</span>
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className="bg-slate-900 border border-amber-500/30 rounded-3xl p-5 text-white shadow-md relative overflow-hidden">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-start sm:items-center gap-3.5">
+              <div className="w-12 h-12 rounded-2xl bg-slate-800 border border-slate-700 text-amber-400 flex items-center justify-center font-black text-xl shrink-0 shadow-inner mt-0.5 sm:mt-0">
+                <Lock className="w-5 h-5 text-amber-400/80" />
+              </div>
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-[11px] bg-amber-500/20 text-amber-300 border border-amber-500/30 px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1">
+                    <Award className="w-3 h-3 text-amber-400" />
+                    <span>متاح حصرياً للمراكز الـ 3 الأولى بنهاية كل شهر</span>
+                  </span>
+                </div>
+                <h3 className="font-black text-slate-100 text-sm sm:text-base mt-1">
+                  كارت الإنجاز والوسام التكريمي مفتوح لأبطال التوب 3 بنهاية كل شهر
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">
+                  أنت حالياً في <b className="text-amber-400">المركز {top3Status.latestMonthRank > 0 ? top3Status.latestMonthRank : '—'}</b> لشهر {top3Status.latestMonthName} برصيد <b className="text-amber-300">{top3Status.latestMonthPoints} نقطة</b>.
+                  {top3Status.pointsToTop3 > 0 ? (
+                    <span className="text-amber-200 block sm:inline font-semibold">
+                      {' '}يفصلك فقط {top3Status.pointsToTop3} نقطة عن دخول التوب 3!
+                    </span>
+                  ) : null}
+                  {' '}واصل حضور القداس وحفظ الآيات لتكون بين الأوائل بنهاية الشهر وتفتح بطاقتك!
+                </p>
+              </div>
+            </div>
+
+            <div className="px-4 py-2.5 bg-slate-800/80 border border-slate-700 rounded-2xl text-center shrink-0 self-start sm:self-auto">
+              <span className="text-[10px] text-slate-400 block font-semibold">حالة كارت الإنجاز</span>
+              <span className="text-xs font-black text-amber-400/90 flex items-center justify-center gap-1 mt-0.5">
+                <Lock className="w-3.5 h-3.5" />
+                <span>مغلق للمركز {top3Status.latestMonthRank > 0 ? top3Status.latestMonthRank : 'الحالي'}</span>
+              </span>
+              <span className="text-[10px] text-slate-400 block mt-0.5">يُفتح تلقائياً للمراكز 1 و 2 و 3</span>
+            </div>
+          </div>
         </div>
       )}
 

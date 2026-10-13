@@ -11,6 +11,7 @@ import {
   calculateMonthlyPerformance, 
   extractAvailableMonths, 
   getArabicMonthYear,
+  getTop3StudentIdsForMonth,
   StudentMonthlyRecord
 } from '../utils/monthlyCalculations';
 import { 
@@ -75,6 +76,17 @@ export const MonthlyReportsView: React.FC<MonthlyReportsViewProps> = ({
   // Calculate monthly metrics
   const monthlyData = useMemo(() => {
     return calculateMonthlyPerformance(
+      selectedMonth,
+      students,
+      sessions,
+      pointsRules,
+      competitionLogs
+    );
+  }, [selectedMonth, students, sessions, pointsRules, competitionLogs]);
+
+  // Top 3 in this selected month
+  const { top3Ids: top3IdsInMonth, top3Map } = useMemo(() => {
+    return getTop3StudentIdsForMonth(
       selectedMonth,
       students,
       sessions,
@@ -426,14 +438,14 @@ export const MonthlyReportsView: React.FC<MonthlyReportsViewProps> = ({
                   <span className="text-xs font-black text-amber-900 bg-amber-100 px-2.5 py-1 rounded-xl">
                     {item.monthlyPoints} نقطة
                   </span>
-                  {onOpenAchievementCard && (
+                  {onOpenAchievementCard && index < 3 && top3IdsInMonth.has(item.student.id) && (
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         onOpenAchievementCard(item.student, 'بطل الشهر');
                       }}
                       className="px-2.5 py-1 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-stone-950 font-black text-xs rounded-xl shadow-xs transition flex items-center gap-1 cursor-pointer shrink-0"
-                      title="استخراج وسام بطل الشهر للمشاركة"
+                      title="استخراج وسام بطل الشهر للمشاركة (ضمن التوب 3)"
                     >
                       <Award className="w-3.5 h-3.5" />
                       <span>كارت 📲</span>
@@ -612,7 +624,7 @@ export const MonthlyReportsView: React.FC<MonthlyReportsViewProps> = ({
                 <th className="py-3 px-2 text-center text-emerald-800">الصلاة</th>
                 <th className="py-3 px-2 text-center text-amber-800">تفاعل</th>
                 <th className="py-3 px-4 text-left font-black text-amber-900">نقاط الشهر</th>
-                <th className="py-3 px-3 text-center">كارت الإنجاز</th>
+                <th className="py-3 px-3 text-center" title="متاح حصرياً للمراكز الثلاثة الأولى لشهر التقرير">كارت التوب 3 🏆</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -720,22 +732,26 @@ export const MonthlyReportsView: React.FC<MonthlyReportsViewProps> = ({
                     </td>
 
                     <td className="py-3 px-3 text-center" onClick={(e) => e.stopPropagation()}>
-                      {onOpenAchievementCard && (
-                        <button
-                          onClick={() => {
-                            const suggested = record.attendanceRate === 100 
-                              ? 'بطل الشهر' 
-                              : record.verseCount > 0 
-                              ? 'افضل قارئ للانجيل وحافظ الآيات' 
-                              : 'بطل الشهر';
-                            onOpenAchievementCard(record.student, suggested);
-                          }}
-                          className="px-2 py-1 bg-amber-50 hover:bg-amber-400 text-amber-900 hover:text-stone-950 font-bold text-xs rounded-xl border border-amber-200 transition inline-flex items-center gap-1 cursor-pointer"
-                          title="استخراج وسام وبطاقة الإنجاز"
-                        >
-                          <Award className="w-3.5 h-3.5 text-amber-600" />
-                          <span>كارت 📲</span>
-                        </button>
+                      {onOpenAchievementCard && top3Map.has(record.student.id) ? (
+                        (() => {
+                          const topMatch = top3Map.get(record.student.id)!;
+                          const medal = topMatch.rank === 1 ? '🥇' : topMatch.rank === 2 ? '🥈' : '🥉';
+                          return (
+                            <button
+                              onClick={() => {
+                                const suggested = topMatch.rank === 1 ? 'بطل الشهر' : 'بطل الشهر';
+                                onOpenAchievementCard(record.student, suggested);
+                              }}
+                              className="px-2.5 py-1 bg-amber-100 hover:bg-amber-400 text-amber-950 font-black text-xs rounded-xl border border-amber-300 transition inline-flex items-center gap-1 cursor-pointer shadow-xs active:scale-95"
+                              title={`استخراج كارت الإنجاز - المركز ${topMatch.rank} لشهر ${monthlyData.monthNameArabic}`}
+                            >
+                              <span>{medal}</span>
+                              <span>كارت 📲</span>
+                            </button>
+                          );
+                        })()
+                      ) : (
+                        <span className="text-slate-300 text-xs font-semibold select-none" title="كارت الإنجاز متاح للمراكز الثلاثة الأولى فقط">—</span>
                       )}
                     </td>
                   </tr>

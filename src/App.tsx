@@ -405,6 +405,28 @@ export default function App() {
       .finally(() => setCloudSyncing(false));
   };
 
+  // 4b. Delete Session (e.g. if cancelled in real life)
+  const handleDeleteSession = (sessionId: string) => {
+    setAppState((prev) => {
+      const remainingSessions = prev.sessions.filter((s) => s.id !== sessionId);
+      return {
+        ...prev,
+        sessions: remainingSessions,
+      };
+    });
+
+    // Update currentSessionId if deleted session was active
+    if (currentSessionId === sessionId) {
+      const remaining = appState.sessions.filter((s) => s.id !== sessionId);
+      setCurrentSessionId(remaining.length > 0 ? remaining[remaining.length - 1].id : '');
+    }
+
+    setCloudSyncing(true);
+    deleteSessionFromFirestore(sessionId)
+      .catch((e) => console.warn('Firestore session delete note:', e))
+      .finally(() => setCloudSyncing(false));
+  };
+
   // 5. Open Reward delivery modal
   const handleDeliverReward = (student: Student, tier: RewardTier) => {
     setRewardDeliveryData({ student, tier });
@@ -648,6 +670,7 @@ export default function App() {
           ) : (
             <StudentPortalView
               student={currentUser.student}
+              allStudents={appState.students}
               sessions={appState.sessions}
               pointsRules={appState.pointsRules}
               rewardTiers={appState.rewardTiers}
@@ -684,6 +707,7 @@ export default function App() {
                   setIsAddStudentOpen(true);
                 }}
                 onOpenImportExport={() => setIsImportExportOpen(true)}
+                onDeleteSession={handleDeleteSession}
               />
             )}
 
@@ -760,6 +784,8 @@ export default function App() {
                   serviceName={appState.serviceName}
                   patronPriests={appState.patronPriests}
                   isCloudConnected={isCloudConnected}
+                  sessions={appState.sessions}
+                  onDeleteSession={handleDeleteSession}
                   onUpdateRewardTiers={handleUpdateRewardTiers}
                   onUpdatePointsRules={handleUpdatePointsRules}
                   onUpdateChurchDetails={handleUpdateChurchDetails}
@@ -852,6 +878,7 @@ export default function App() {
       {profileStudent && (
         <StudentProfileModal
           student={profileStudent}
+          allStudents={appState.students}
           sessions={appState.sessions}
           pointsRules={appState.pointsRules}
           rewardTiers={appState.rewardTiers}

@@ -9,6 +9,7 @@ import {
   Gender 
 } from '../types';
 import { calculateStudentStats } from '../utils/calculations';
+import { extractAvailableMonths, getTop3StudentIdsForMonth } from '../utils/monthlyCalculations';
 import { 
   Users, 
   Search, 
@@ -76,6 +77,16 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
   const todayBirthdaysCount = useMemo(() => {
     return students.filter((s) => isBirthdayToday(s.birthDate)).length;
   }, [students]);
+
+  // Top 3 in the latest month
+  const latestMonth = useMemo(() => {
+    const months = extractAvailableMonths(sessions);
+    return months[0] || new Date().toISOString().substring(0, 7);
+  }, [sessions]);
+
+  const { top3Map } = useMemo(() => {
+    return getTop3StudentIdsForMonth(latestMonth, students, sessions, pointsRules, competitionLogs);
+  }, [latestMonth, students, sessions, pointsRules, competitionLogs]);
 
   // Calculate stats for each student
   const studentsWithStats = useMemo(() => {
@@ -402,18 +413,24 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
               </div>
 
               <div className="flex items-center gap-2">
-                {onOpenAchievementCard && (
-                  <button
-                    onClick={() => {
-                      const suggested = currentStreak >= 4 ? 'بطل التتابع الذهبي' : 'بطل الشهر';
-                      onOpenAchievementCard(student, suggested);
-                    }}
-                    className="px-2.5 py-1 bg-amber-50 hover:bg-amber-400 text-amber-950 font-bold text-xs rounded-xl transition border border-amber-300 flex items-center gap-1 cursor-pointer"
-                    title="استخراج بطاقة الإنجاز والوسام التكريمي"
-                  >
-                    <Award className="w-3.5 h-3.5 text-amber-700" />
-                    <span>كارت الإنجاز 📲</span>
-                  </button>
+                {onOpenAchievementCard && top3Map.has(student.id) && (
+                  (() => {
+                    const topMatch = top3Map.get(student.id)!;
+                    const medal = topMatch.rank === 1 ? '🥇' : topMatch.rank === 2 ? '🥈' : '🥉';
+                    return (
+                      <button
+                        onClick={() => {
+                          const suggested = topMatch.rank === 1 ? 'بطل الشهر' : 'بطل الشهر';
+                          onOpenAchievementCard(student, suggested);
+                        }}
+                        className="px-2.5 py-1 bg-amber-100 hover:bg-amber-400 text-amber-950 font-black text-xs rounded-xl transition border border-amber-300 flex items-center gap-1 cursor-pointer shadow-xs active:scale-95"
+                        title={`استخراج كارت الإنجاز - المركز ${topMatch.rank} للشهر`}
+                      >
+                        <span>{medal}</span>
+                        <span>كارت التوب 3 📲</span>
+                      </button>
+                    );
+                  })()
                 )}
                 <button
                   onClick={() => onSelectStudent(student)}

@@ -383,7 +383,7 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
                 <th className="py-3 px-4 text-center">نسبة الحضور</th>
                 <th className="py-3 px-4 text-center">الهدايا الممنوحة</th>
                 <th className="py-3 px-4 text-left font-black text-amber-900">إجمالي النقاط</th>
-                <th className="py-3 px-4 text-center">كارت الإنجاز</th>
+                <th className="py-3 px-4 text-center" title="متاح للمراكز الثلاثة الأولى">كارت التوب 3 🏆</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -474,22 +474,24 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
                     </td>
 
                     <td className="py-3 px-4 text-center" onClick={(e) => e.stopPropagation()}>
-                      {onOpenAchievementCard && (
+                      {onOpenAchievementCard && index < 3 ? (
                         <button
                           onClick={() => {
-                            const suggested = item.currentStreak >= 4 
+                            const suggested = index === 0 
+                              ? 'بطل الشهر' 
+                              : item.currentStreak >= 4 
                               ? 'بطل التتابع الذهبي' 
-                              : item.pointsBreakdown.verse > 0 
-                              ? 'افضل قارئ للانجيل وحافظ الآيات' 
                               : 'بطل الشهر';
                             onOpenAchievementCard(item.student, suggested);
                           }}
-                          className="px-2.5 py-1 bg-amber-50 hover:bg-amber-400 text-amber-900 hover:text-stone-950 font-bold text-xs rounded-xl border border-amber-200 transition inline-flex items-center gap-1 cursor-pointer"
-                          title="استخراج وسام وبطاقة الإنجاز"
+                          className="px-2.5 py-1 bg-amber-100 hover:bg-amber-400 text-amber-950 font-black text-xs rounded-xl border border-amber-300 transition inline-flex items-center gap-1 cursor-pointer shadow-xs active:scale-95"
+                          title="استخراج وسام وبطاقة الإنجاز (للمراكز الثلاثة الأولى)"
                         >
-                          <Award className="w-3.5 h-3.5 text-amber-600" />
+                          <span>{index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}</span>
                           <span>كارت 📲</span>
                         </button>
+                      ) : (
+                        <span className="text-slate-300 text-xs font-semibold select-none" title="كارت الإنجاز متاح للمراكز الثلاثة الأولى فقط">—</span>
                       )}
                     </td>
                   </tr>

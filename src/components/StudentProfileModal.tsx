@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { 
   Student, 
   ServiceSession, 
@@ -7,6 +7,7 @@ import {
   CompetitionLog 
 } from '../types';
 import { calculateStudentStats } from '../utils/calculations';
+import { getStudentMonthlyTop3Info } from '../utils/monthlyCalculations';
 import { 
   X, 
   Flame, 
@@ -31,6 +32,7 @@ import { isBirthdayToday, calculateAge, formatBirthDateArabic } from '../utils/b
 
 interface StudentProfileModalProps {
   student: Student;
+  allStudents?: Student[];
   sessions: ServiceSession[];
   pointsRules: PointsRuleConfig;
   rewardTiers: RewardTier[];
@@ -44,6 +46,7 @@ interface StudentProfileModalProps {
 
 export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
   student,
+  allStudents = [],
   sessions,
   pointsRules,
   rewardTiers,
@@ -55,6 +58,18 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
   onOpenAchievementCard,
 }) => {
   const stats = calculateStudentStats(student, sessions, pointsRules, competitionLogs, rewardTiers);
+
+  // Top 3 Monthly Standing Calculation
+  const top3Status = useMemo(() => {
+    const list = allStudents.length > 0 ? allStudents : [student];
+    return getStudentMonthlyTop3Info(
+      student.id,
+      list,
+      sessions,
+      pointsRules,
+      competitionLogs
+    );
+  }, [student.id, allStudents, sessions, pointsRules, competitionLogs]);
 
   // Sorted sessions list
   const sortedSessions = [...sessions].sort(
@@ -131,17 +146,17 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
               </>
             )}
 
-            {onOpenAchievementCard && (
+            {onOpenAchievementCard && top3Status.isTop3 && (
               <button
                 onClick={() => {
                   onClose();
                   onOpenAchievementCard(student);
                 }}
-                className="px-3 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-stone-950 text-xs font-black rounded-xl transition shadow-xs flex items-center gap-1.5 cursor-pointer"
-                title="استخراج بطاقة الإنجاز والوسام التكريمي للمشاركة"
+                className="px-3 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-stone-950 text-xs font-black rounded-xl transition shadow-xs flex items-center gap-1.5 cursor-pointer active:scale-95"
+                title={`استخراج كارت الإنجاز والوسام - المركز ${top3Status.rank} لشهر ${top3Status.monthNameArabic}`}
               >
-                <Award className="w-3.5 h-3.5" />
-                <span>بطاقة الإنجاز 📲</span>
+                <span>{top3Status.rank === 1 ? '🥇' : top3Status.rank === 2 ? '🥈' : '🥉'}</span>
+                <span>كارت التوب 3 📲</span>
               </button>
             )}
 

@@ -365,3 +365,138 @@ export function calculateMonthlyPerformance(
     needsFollowUp,
   };
 }
+
+/**
+ * Returns the set of student IDs and their ranks for the top 3 spots in a given month.
+ */
+export function getTop3StudentIdsForMonth(
+  yearMonth: string,
+  students: Student[],
+  sessions: ServiceSession[],
+  pointsRules: PointsRuleConfig,
+  competitionLogs: CompetitionLog[]
+): {
+  top3Ids: Set<string>;
+  top3Map: Map<string, { rank: 1 | 2 | 3; monthlyPoints: number; student: Student }>;
+  top3List: { rank: 1 | 2 | 3; monthlyPoints: number; student: Student }[];
+} {
+  const perf = calculateMonthlyPerformance(yearMonth, students, sessions, pointsRules, competitionLogs);
+  const sorted = [...perf.studentsRecords].sort(
+    (a, b) => b.monthlyPoints - a.monthlyPoints || b.attendanceRate - a.attendanceRate
+  );
+
+  const top3List: { rank: 1 | 2 | 3; monthlyPoints: number; student: Student }[] = [];
+  const top3Ids = new Set<string>();
+  const top3Map = new Map<string, { rank: 1 | 2 | 3; monthlyPoints: number; student: Student }>();
+
+  // Only consider students with attendance or points if sessions held
+  const validCandidates = sorted.slice(0, 3);
+  validCandidates.forEach((r, idx) => {
+    if (r.monthlyPoints > 0 || perf.sessionsCount > 0) {
+      const rank = (idx + 1) as 1 | 2 | 3;
+      const item = { rank, monthlyPoints: r.monthlyPoints, student: r.student };
+      top3List.push(item);
+      top3Ids.add(r.student.id);
+      top3Map.set(r.student.id, item);
+    }
+  });
+
+  return { top3Ids, top3Map, top3List };
+}
+
+export interface StudentMonthlyTop3Info {
+  isTop3: boolean;
+  rank?: 1 | 2 | 3;
+  monthNameArabic: string;
+  yearMonth: string;
+  monthlyPoints: number;
+  latestMonthName: string;
+  latestMonthRank: number;
+  latestMonthPoints: number;
+  pointsToTop3: number;
+  thirdPlacePoints: number;
+  eligibleMonths: {
+    yearMonth: string;
+    monthNameArabic: string;
+    rank: 1 | 2 | 3;
+    monthlyPoints: number;
+  }[];
+}
+
+/**
+ * Checks if a specific student has achieved a Top 3 rank at the end of any recorded month,
+ * and calculates their current monthly standing.
+ */
+export function getStudentMonthlyTop3Info(
+  studentId: string,
+  students: Student[],
+  sessions: ServiceSession[],
+  pointsRules: PointsRuleConfig,
+  competitionLogs: CompetitionLog[],
+  targetMonth?: string
+): StudentMonthlyTop3Info {
+  const availableMonths = extractAvailableMonths(sessions);
+  const latestMonth = targetMonth || availableMonths[0] || new Date().toISOString().substring(0, 7);
+  const latestMonthName = getArabicMonthYear(latestMonth);
+
+  const eligibleMonths: {
+    yearMonth: string;
+    monthNameArabic: string;
+    rank: 1 | 2 | 3;
+    monthlyPoints: number;
+  }[] = [];
+
+  let latestMonthRank = 0;
+  let latestMonthPoints = 0;
+  let thirdPlacePoints = 0;
+  let pointsToTop3 = 0;
+
+  // Process available months
+  availableMonths.forEach((ym) => {
+    const { top3Map } = getTop3StudentIdsForMonth(ym, students, sessions, pointsRules, competitionLogs);
+    if (top3Map.has(studentId)) {
+      const match = top3Map.get(studentId)!;
+      eligibleMonths.push({
+        yearMonth: ym,
+        monthNameArabic: getArabicMonthYear(ym),
+        rank: match.rank,
+        monthlyPoints: match.monthlyPoints,
+      });
+    }
+
+    if (ym === latestMonth) {
+      const perf = calculateMonthlyPerformance(ym, students, sessions, pointsRules, competitionLogs);
+      const sorted = [...perf.studentsRecords].sort(
+        (a, b) => b.monthlyPoints - a.monthlyPoints || b.attendanceRate - a.attendanceRate
+      );
+      const studentIdx = sorted.findIndex((r) => r.student.id === studentId);
+      if (studentIdx !== -1) {
+        latestMonthRank = studentIdx + 1;
+        latestMonthPoints = sorted[studentIdx].monthlyPoints;
+      }
+      if (sorted[2]) {
+        thirdPlacePoints = sorted[2].monthlyPoints;
+        if (latestMonthRank > 3) {
+          pointsToTop3 = Math.max(1, thirdPlacePoints - latestMonthPoints + 1);
+        }
+      }
+    }
+  });
+
+  const isTop3 = eligibleMonths.length > 0;
+  const currentOrBestMonth = eligibleMonths[0];
+
+  return {
+    isTop3,
+    rank: currentOrBestMonth?.rank,
+    monthNameArabic: currentOrBestMonth?.monthNameArabic || latestMonthName,
+    yearMonth: currentOrBestMonth?.yearMonth || latestMonth,
+    monthlyPoints: currentOrBestMonth?.monthlyPoints ?? latestMonthPoints,
+    latestMonthName,
+    latestMonthRank,
+    latestMonthPoints,
+    pointsToTop3,
+    thirdPlacePoints,
+    eligibleMonths,
+  };
+}

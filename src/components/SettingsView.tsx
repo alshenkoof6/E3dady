@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { RewardTier, PointsRuleConfig, AppState } from '../types';
+import { RewardTier, PointsRuleConfig, AppState, ServiceSession } from '../types';
 import { 
   Settings, 
   Gift, 
@@ -14,7 +14,9 @@ import {
   Award, 
   AlertTriangle,
   Database,
-  RefreshCw
+  RefreshCw,
+  Calendar,
+  AlertCircle
 } from 'lucide-react';
 
 interface SettingsViewProps {
@@ -24,6 +26,8 @@ interface SettingsViewProps {
   serviceName: string;
   patronPriests?: string;
   isCloudConnected?: boolean;
+  sessions?: ServiceSession[];
+  onDeleteSession?: (sessionId: string) => void;
   onUpdateRewardTiers: (tiers: RewardTier[]) => void;
   onUpdatePointsRules: (rules: PointsRuleConfig) => void;
   onUpdateChurchDetails: (churchName: string, serviceName: string, patronPriests?: string) => void;
@@ -38,6 +42,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   serviceName,
   patronPriests = 'تحت رعاية: أبونا مكسيموس يوسف • أبونا دوماديوس صليب',
   isCloudConnected = true,
+  sessions = [],
+  onDeleteSession,
   onUpdateRewardTiers,
   onUpdatePointsRules,
   onUpdateChurchDetails,
@@ -428,6 +434,75 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             </p>
           </div>
         </div>
+      </div>
+
+      {/* 4. SESSIONS MANAGEMENT SECTION (حذف وإدارة اللقاءات) */}
+      <div className="bg-white rounded-3xl border border-slate-200/80 shadow-sm p-6 space-y-4">
+        <div>
+          <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+            <Calendar className="w-5 h-5 text-amber-600" />
+            <span>إدارة لقاءات الخدمة المسجلة</span>
+          </h3>
+          <p className="text-xs text-slate-500 mt-0.5">
+            إذا تم إنشاء لقاء عن طريق الخطأ أو تم إلغاؤه في الواقع، يمكنك حذفه نهائياً من هنا أو من شاشة الحضور الرئيسية.
+          </p>
+        </div>
+
+        {sessions.length === 0 ? (
+          <div className="text-center py-6 px-4 bg-slate-50 border border-slate-200 rounded-2xl">
+            <p className="text-xs text-slate-500 font-bold">لا توجد لقاءات مسجلة حالياً.</p>
+          </div>
+        ) : (
+          <div className="space-y-2.5 max-h-80 overflow-y-auto pr-1">
+            {sessions.map((sess) => {
+              const attendeesCount = Object.values(sess.records || {}).filter((r) => r.status === 'present').length;
+              const totalRecords = Object.keys(sess.records || {}).length;
+              return (
+                <div
+                  key={sess.id}
+                  className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-2xl bg-slate-50 hover:bg-amber-50/40 border border-slate-200 transition"
+                >
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-black text-slate-900">{sess.title}</span>
+                      <span className="text-[11px] font-bold text-amber-900 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded-lg">
+                        {sess.date}
+                      </span>
+                      {sess.speakerServant && (
+                        <span className="text-[10px] text-slate-600 font-semibold hidden sm:inline">
+                          (الخادم: {sess.speakerServant})
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3 text-[11px] text-slate-500">
+                      <span>حاضرون: <b className="text-emerald-700">{attendeesCount}</b></span>
+                      <span>إجمالي المسجلين: <b>{totalRecords}</b></span>
+                      {sess.verseOfTheWeek && (
+                        <span className="truncate max-w-xs text-slate-400">آية: {sess.verseOfTheWeek}</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {onDeleteSession && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (window.confirm(`هل أنت متأكد من حذف لقاء "${sess.title}" بتاريخ ${sess.date}؟ سيتم حذف جميع تسجيلات الحضور الخاصة بهذا اللقاء.`)) {
+                          onDeleteSession(sess.id);
+                        }
+                      }}
+                      className="self-end sm:self-center flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-xl transition cursor-pointer active:scale-95"
+                      title="حذف هذا اللقاء نهائياً"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                      <span>حذف اللقاء</span>
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* 4. ACTIONS & RESET */}
