@@ -18,10 +18,19 @@ import {
   Calendar,
   AlertCircle,
   X,
-  Clock,
   CheckCircle2,
-  History
+  History,
+  Clock,
+  Bell,
+  Smartphone,
+  Send
 } from 'lucide-react';
+import { 
+  isNotificationSupported, 
+  getNotificationPermission, 
+  requestNotificationPermission, 
+  sendTestNotification 
+} from '../utils/notifications';
 
 interface SettingsViewProps {
   rewardTiers: RewardTier[];
@@ -71,6 +80,28 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     pointsRules.pointsCycleStartDate || new Date().toISOString().split('T')[0]
   );
   const [cycleActionMessage, setCycleActionMessage] = useState<string | null>(null);
+
+  // Push notifications state
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>(() => getNotificationPermission());
+  const [testNotificationSent, setTestNotificationSent] = useState(false);
+
+  const handleRequestNotificationPermission = async () => {
+    const res = await requestNotificationPermission();
+    setNotificationPermission(res);
+    if (res === 'granted') {
+      await sendTestNotification();
+      setTestNotificationSent(true);
+      setTimeout(() => setTestNotificationSent(false), 4000);
+    }
+  };
+
+  const handleSendTestNotification = async () => {
+    const res = await sendTestNotification();
+    if (res) {
+      setTestNotificationSent(true);
+      setTimeout(() => setTestNotificationSent(false), 4000);
+    }
+  };
 
   React.useEffect(() => {
     setLocalRules(pointsRules);
@@ -656,7 +687,70 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         </div>
       )}
 
-      {/* 5. SESSIONS MANAGEMENT SECTION (حذف وإدارة اللقاءات) */}
+      {/* 5. PUSH NOTIFICATIONS SETTINGS SECTION */}
+      <div className="bg-white rounded-3xl border border-slate-200/80 shadow-sm p-6 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+              <Bell className="w-5 h-5 text-amber-600" />
+              <span>إشعارات الموبايل والنظام الخارجية (Push Notifications)</span>
+            </h3>
+            <p className="text-xs text-slate-500 mt-0.5">
+              تصلك تنبيهات بأعياد ميلاد المخدومين وإحصائيات الحضور الاستثنائية (عند تخطي 90%) مباشرة على شاشة قفل الهاتف وسطح المكتب مثل فيسبوك.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            {isNotificationSupported() ? (
+              notificationPermission === 'granted' ? (
+                <div className="flex items-center gap-2">
+                  <span className="px-3 py-1 rounded-full text-xs font-black bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>مفعّلة على هذا الجهاز</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleSendTestNotification}
+                    className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition cursor-pointer active:scale-95"
+                    title="إرسال إشعار تجريبي لاختبار التنبيه فوراً"
+                  >
+                    <Send className="w-3.5 h-3.5 text-amber-600" />
+                    <span>{testNotificationSent ? 'تم الإرسال!' : 'تجربة إشعار'}</span>
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleRequestNotificationPermission}
+                  className="flex items-center gap-1.5 px-4 py-2 text-xs font-black bg-amber-500 hover:bg-amber-400 text-stone-950 rounded-xl transition shadow-md shadow-amber-500/20 cursor-pointer active:scale-95"
+                >
+                  <Smartphone className="w-4 h-4" />
+                  <span>تفعيل إشعارات الهاتف الآن</span>
+                </button>
+              )
+            ) : (
+              <span className="text-xs text-slate-400 font-medium">
+                متصفحك الحالي لا يدعم Web Notifications
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div className="p-4 rounded-2xl bg-amber-50/60 border border-amber-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-amber-950">
+          <div className="space-y-1">
+            <span className="font-bold text-amber-900 block">
+              💡 ما هي التنبيهات التي يتم إرسالها تلقائياً؟
+            </span>
+            <ul className="list-disc list-inside space-y-0.5 text-amber-900/90 text-[11px]">
+              <li><b>أعياد ميلاد المخدومين</b>: إشعار صباحي يوم عيد ميلاد أي مخدوم مع رابط معايدة سريع عبر واتساب.</li>
+              <li><b>أرقام قياسية ونسب الحضور</b>: إشعار احتفالي فور تجاوز نسبة حضور أي لقاء حاجز الـ 90%.</li>
+              <li><b>أبطال الالتزام التام</b>: إشعار عند تحقيق مخدوم لسلسلة حضور استثنائية (ستريك 5، 10، 15 أسبوع بدون غياب).</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      {/* 6. SESSIONS MANAGEMENT SECTION (حذف وإدارة اللقاءات) */}
       <div className="bg-white rounded-3xl border border-slate-200/80 shadow-sm p-6 space-y-4">
         <div>
           <h3 className="text-base font-black text-slate-900 flex items-center gap-2">

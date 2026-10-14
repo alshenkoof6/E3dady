@@ -17,7 +17,8 @@ import {
   Eye,
   LogOut,
   Database,
-  Cloud
+  Cloud,
+  Bell
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -28,6 +29,9 @@ interface HeaderProps {
   patronPriests?: string;
   unclaimedRewardsCount: number;
   todayBirthdaysCount?: number;
+  unreadNotificationsCount?: number;
+  isNotificationsOpen?: boolean;
+  onToggleNotifications?: () => void;
   currentUser: CurrentUser;
   isCloudConnected?: boolean;
   cloudSyncing?: boolean;
@@ -47,6 +51,9 @@ export const Header: React.FC<HeaderProps> = ({
   patronPriests,
   unclaimedRewardsCount,
   todayBirthdaysCount = 0,
+  unreadNotificationsCount = 0,
+  isNotificationsOpen = false,
+  onToggleNotifications,
   currentUser,
   isCloudConnected = false,
   cloudSyncing = false,
@@ -96,6 +103,33 @@ export const Header: React.FC<HeaderProps> = ({
                 {cloudSyncing ? 'مزامنة...' : 'قاعدة البيانات سحابية'}
               </span>
             </div>
+          )}
+
+          {/* Notifications Bell Button */}
+          {onToggleNotifications && (
+            <button
+              onClick={onToggleNotifications}
+              className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition backdrop-blur-sm active:scale-95 border ${
+                isNotificationsOpen
+                  ? 'bg-amber-500 text-stone-950 border-amber-300 shadow-md shadow-amber-500/30 font-black'
+                  : unreadNotificationsCount > 0
+                  ? 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border-amber-400/50 shadow-md shadow-amber-950/40'
+                  : 'bg-white/10 hover:bg-white/20 text-stone-200 border-white/15'
+              }`}
+              title={
+                unreadNotificationsCount > 0
+                  ? `لديك ${unreadNotificationsCount} إشعار جديد (أعياد ميلاد وإحصائيات)`
+                  : 'مركز الإشعارات والتنبيهات'
+              }
+            >
+              <Bell className={`w-4 h-4 ${unreadNotificationsCount > 0 ? 'text-amber-300 animate-bounce' : 'text-stone-300'}`} />
+              <span className="text-xs font-black hidden sm:inline">الإشعارات</span>
+              {unreadNotificationsCount > 0 && (
+                <span className="px-1.5 py-0.2 min-w-[18px] h-[18px] rounded-full bg-rose-600 text-white text-[10px] font-black flex items-center justify-center shadow-md animate-pulse border border-white/30">
+                  {unreadNotificationsCount > 9 ? '+9' : unreadNotificationsCount}
+                </span>
+              )}
+            </button>
           )}
 
           {/* User Status Button */}

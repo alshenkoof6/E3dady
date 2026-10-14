@@ -30,7 +30,14 @@ import { LoginModal } from './components/LoginModal';
 import { StudentPortalView } from './components/StudentPortalView';
 import { AchievementCardModal, AchievementTitleType } from './components/AchievementCardModal';
 import { BirthdayNotificationBanner } from './components/BirthdayNotificationBanner';
+import { NotificationsDropdown } from './components/NotificationsDropdown';
 import { getTodayBirthdays } from './utils/birthday';
+import { 
+  generateAppNotifications, 
+  markNotificationAsRead, 
+  markAllNotificationsAsRead, 
+  dispatchExternalNotificationsIfDue 
+} from './utils/notifications';
 import { 
   testConnection, 
   subscribeToDatabase, 
@@ -192,6 +199,34 @@ export default function App() {
   const todayBirthdays = useMemo(() => {
     return getTodayBirthdays(appState.students);
   }, [appState.students]);
+
+  // Notifications state
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [notificationsVersion, setNotificationsVersion] = useState(0);
+
+  // Generate intelligent notifications (birthdays, attendance records >= 90%, streak milestones, rewards)
+  const notifications = useMemo(() => {
+    return generateAppNotifications(appState);
+  }, [appState, notificationsVersion]);
+
+  const unreadNotificationsCount = useMemo(() => {
+    return notifications.filter((n) => !n.isRead).length;
+  }, [notifications]);
+
+  // Push notifications sync to native device if permission granted
+  useEffect(() => {
+    dispatchExternalNotificationsIfDue(notifications);
+  }, [notifications]);
+
+  const handleMarkNotificationAsRead = (id: string) => {
+    markNotificationAsRead(id);
+    setNotificationsVersion((v) => v + 1);
+  };
+
+  const handleMarkAllNotificationsAsRead = () => {
+    markAllNotificationsAsRead(notifications.map((n) => n.id));
+    setNotificationsVersion((v) => v + 1);
+  };
 
   const isServant = currentUser?.type === 'servant';
 
@@ -633,6 +668,9 @@ export default function App() {
         patronPriests={appState.patronPriests}
         unclaimedRewardsCount={unclaimedRewardsCount}
         todayBirthdaysCount={todayBirthdays.length}
+        unreadNotificationsCount={unreadNotificationsCount}
+        isNotificationsOpen={isNotificationsOpen}
+        onToggleNotifications={() => setIsNotificationsOpen((prev) => !prev)}
         currentUser={currentUser}
         isCloudConnected={isCloudConnected}
         cloudSyncing={cloudSyncing}
@@ -645,6 +683,26 @@ export default function App() {
         onOpenAddCompetition={() => handleOpenAddBonusOrPenalty(undefined, 'bonus')}
         onOpenImportExport={() => setIsImportExportOpen(true)}
         onViewBirthdays={() => setCurrentTab('students')}
+      />
+
+      {/* Notifications Popover Dropdown */}
+      <NotificationsDropdown
+        isOpen={isNotificationsOpen}
+        onClose={() => setIsNotificationsOpen(false)}
+        notifications={notifications}
+        onMarkAsRead={handleMarkNotificationAsRead}
+        onMarkAllAsRead={handleMarkAllNotificationsAsRead}
+        onSelectStudent={(studentId) => {
+          const s = appState.students.find((st) => st.id === studentId);
+          if (s) setProfileStudent(s);
+        }}
+        onSelectSession={(sessionId) => {
+          setCurrentSessionId(sessionId);
+        }}
+        onNavigateTab={(tab) => {
+          setCurrentTab(tab);
+        }}
+        allStudents={appState.students}
       />
 
       {/* Main Container */}

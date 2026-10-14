@@ -113,3 +113,26 @@ export interface AppState {
   serviceName: string;
   patronPriests?: string;
 }
+
+export type NotificationCategory = 'birthday' | 'milestone' | 'reward' | 'cycle' | 'system';
+export type NotificationPriority = 'high' | 'normal' | 'low';
+
+export interface AppNotification {
+  id: string;
+  category: NotificationCategory;
+  priority: NotificationPriority;
+  title: string;
+  message: string;
+  timestamp: string; // ISO or date string
+  dateLabel?: string; // e.g. "اليوم", "أمس", etc.
+  studentId?: string;
+  studentName?: string;
+  studentPhone?: string;
+  studentPhoto?: string;
+  sessionId?: string;
+  metricValue?: string | number;
+  badgeText?: string;
+  actionType?: 'view_student' | 'view_attendance' | 'view_rewards' | 'view_leaderboard' | 'whatsapp' | 'view_session';
+  isRead?: boolean;
+}
+
