@@ -43,6 +43,7 @@ interface StudentsViewProps {
   onDeleteStudent: (studentId: string) => void;
   onEditStudent: (student: Student) => void;
   onOpenAchievementCard?: (student: Student, title?: 'بطل الشهر' | 'بطل التتابع الذهبي' | 'افضل قارئ للانجيل وحافظ الآيات') => void;
+  onOpenParentReport?: (student: Student) => void;
 }
 
 export const StudentsView: React.FC<StudentsViewProps> = ({
@@ -59,6 +60,7 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
   onDeleteStudent,
   onEditStudent,
   onOpenAchievementCard,
+  onOpenParentReport,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedGrade, setSelectedGrade] = useState<GradeLevel | 'الكل'>('الكل');
@@ -409,6 +411,17 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
                   </>
                 ) : (
                   <span className="text-[10px] text-slate-400">لا يوجد رقم مسجل</span>
+                )}
+
+                {onOpenParentReport && (
+                  <button
+                    onClick={() => onOpenParentReport(student)}
+                    className="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-lg transition border border-emerald-200 flex items-center gap-1 text-[11px] font-bold cursor-pointer active:scale-95"
+                    title="إرسال تقرير وتواصل لولي الأمر عبر واتساب"
+                  >
+                    <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
+                    <span className="hidden sm:inline">تقرير ولي الأمر 📱</span>
+                  </button>
                 )}
               </div>
 

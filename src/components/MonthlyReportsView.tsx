@@ -49,6 +49,19 @@ interface MonthlyReportsViewProps {
   serviceName: string;
   onSelectStudent: (student: Student) => void;
   onOpenAchievementCard?: (student: Student, title?: 'بطل الشهر' | 'بطل التتابع الذهبي' | 'افضل قارئ للانجيل وحافظ الآيات') => void;
+  onOpenParentReport?: (
+    student: Student, 
+    monthlyStats?: {
+      sessionsHeld: number;
+      presentCount: number;
+      attendanceRate: number;
+      monthlyPoints: number;
+      liturgyCount: number;
+      verseCount: number;
+      prayerCount: number;
+    }, 
+    monthName?: string
+  ) => void;
 }
 
 export const MonthlyReportsView: React.FC<MonthlyReportsViewProps> = ({
@@ -61,6 +74,7 @@ export const MonthlyReportsView: React.FC<MonthlyReportsViewProps> = ({
   serviceName,
   onSelectStudent,
   onOpenAchievementCard,
+  onOpenParentReport,
 }) => {
   // Extract all available months from sessions
   const availableMonths = useMemo(() => extractAvailableMonths(sessions), [sessions]);
@@ -731,28 +745,49 @@ export const MonthlyReportsView: React.FC<MonthlyReportsViewProps> = ({
                       </span>
                     </td>
 
-                    <td className="py-3 px-3 text-center" onClick={(e) => e.stopPropagation()}>
-                      {onOpenAchievementCard && top3Map.has(record.student.id) ? (
-                        (() => {
-                          const topMatch = top3Map.get(record.student.id)!;
-                          const medal = topMatch.rank === 1 ? '🥇' : topMatch.rank === 2 ? '🥈' : '🥉';
-                          return (
-                            <button
-                              onClick={() => {
-                                const suggested = topMatch.rank === 1 ? 'بطل الشهر' : 'بطل الشهر';
-                                onOpenAchievementCard(record.student, suggested);
-                              }}
-                              className="px-2.5 py-1 bg-amber-100 hover:bg-amber-400 text-amber-950 font-black text-xs rounded-xl border border-amber-300 transition inline-flex items-center gap-1 cursor-pointer shadow-xs active:scale-95"
-                              title={`استخراج كارت الإنجاز - المركز ${topMatch.rank} لشهر ${monthlyData.monthNameArabic}`}
-                            >
-                              <span>{medal}</span>
-                              <span>كارت 📲</span>
-                            </button>
-                          );
-                        })()
-                      ) : (
-                        <span className="text-slate-300 text-xs font-semibold select-none" title="كارت الإنجاز متاح للمراكز الثلاثة الأولى فقط">—</span>
-                      )}
+                    <td className="py-3 px-3 text-center whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center justify-center gap-1.5">
+                        {onOpenParentReport && (
+                          <button
+                            onClick={() => onOpenParentReport(record.student, {
+                              sessionsHeld: record.sessionsHeld,
+                              presentCount: record.presentCount,
+                              attendanceRate: record.attendanceRate,
+                              monthlyPoints: record.monthlyPoints,
+                              liturgyCount: record.liturgyCount,
+                              verseCount: record.verseCount,
+                              prayerCount: record.prayerCount,
+                            }, monthlyData.monthNameArabic)}
+                            className="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs rounded-xl border border-emerald-200 transition inline-flex items-center gap-1 cursor-pointer shadow-xs active:scale-95"
+                            title={`إرسال تقرير شهر ${monthlyData.monthNameArabic} لولي أمر ${record.student.name} عبر واتساب`}
+                          >
+                            <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
+                            <span className="hidden sm:inline">تقرير لولي الأمر 📱</span>
+                          </button>
+                        )}
+
+                        {onOpenAchievementCard && top3Map.has(record.student.id) ? (
+                          (() => {
+                            const topMatch = top3Map.get(record.student.id)!;
+                            const medal = topMatch.rank === 1 ? '🥇' : topMatch.rank === 2 ? '🥈' : '🥉';
+                            return (
+                              <button
+                                onClick={() => {
+                                  const suggested = topMatch.rank === 1 ? 'بطل الشهر' : 'بطل الشهر';
+                                  onOpenAchievementCard(record.student, suggested);
+                                }}
+                                className="px-2.5 py-1 bg-amber-100 hover:bg-amber-400 text-amber-950 font-black text-xs rounded-xl border border-amber-300 transition inline-flex items-center gap-1 cursor-pointer shadow-xs active:scale-95"
+                                title={`استخراج كارت الإنجاز - المركز ${topMatch.rank} لشهر ${monthlyData.monthNameArabic}`}
+                              >
+                                <span>{medal}</span>
+                                <span>كارت 📲</span>
+                              </button>
+                            );
+                          })()
+                        ) : !onOpenParentReport ? (
+                          <span className="text-slate-300 text-xs font-semibold select-none" title="كارت الإنجاز متاح للمراكز الثلاثة الأولى فقط">—</span>
+                        ) : null}
+                      </div>
                     </td>
                   </tr>
                 ))

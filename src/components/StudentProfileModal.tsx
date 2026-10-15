@@ -42,6 +42,7 @@ interface StudentProfileModalProps {
   onEditStudent: (student: Student) => void;
   onOpenAddBonusOrPenalty?: (student: Student, mode: 'bonus' | 'penalty') => void;
   onOpenAchievementCard?: (student: Student) => void;
+  onOpenParentReport?: (student: Student) => void;
 }
 
 export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
@@ -56,6 +57,7 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
   onEditStudent,
   onOpenAddBonusOrPenalty,
   onOpenAchievementCard,
+  onOpenParentReport,
 }) => {
   const stats = calculateStudentStats(student, sessions, pointsRules, competitionLogs, rewardTiers);
 
@@ -119,12 +121,27 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
               <p className="text-xs text-slate-500 mt-0.5">
                 {student.grade} • {student.family}
                 {student.birthDate && ` • ${formatBirthDateArabic(student.birthDate)}`}
+                {student.parentPhone && ` • ولي الأمر: ${student.parentPhone}`}
               </p>
             </div>
           </div>
 
           {/* Quick Action Buttons */}
           <div className="flex flex-wrap items-center gap-2">
+            {onOpenParentReport && (
+              <button
+                onClick={() => {
+                  onClose();
+                  onOpenParentReport(student);
+                }}
+                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black rounded-xl transition shadow-sm flex items-center gap-1.5 cursor-pointer active:scale-95"
+                title="إرسال تقرير إنجازات ورسالة تشجيعية لولي الأمر عبر واتساب"
+              >
+                <MessageCircle className="w-3.5 h-3.5" />
+                <span>تقرير ولي الأمر 📱</span>
+              </button>
+            )}
+
             {student.phone && (
               <>
                 <a
@@ -141,7 +158,7 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
                   className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold rounded-xl transition flex items-center gap-1.5 border border-emerald-200"
                 >
                   <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>واتساب</span>
+                  <span>واتساب المخدوم</span>
                 </a>
               </>
             )}

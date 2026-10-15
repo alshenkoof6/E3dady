@@ -31,6 +31,7 @@ import { StudentPortalView } from './components/StudentPortalView';
 import { AchievementCardModal, AchievementTitleType } from './components/AchievementCardModal';
 import { BirthdayNotificationBanner } from './components/BirthdayNotificationBanner';
 import { NotificationsDropdown } from './components/NotificationsDropdown';
+import { ParentWhatsAppReportModal } from './components/ParentWhatsAppReportModal';
 import { getTodayBirthdays } from './utils/birthday';
 import { 
   generateAppNotifications, 
@@ -94,6 +95,19 @@ export default function App() {
   const [profileStudent, setProfileStudent] = useState<Student | null>(null);
   const [rewardDeliveryData, setRewardDeliveryData] = useState<{ student: Student; tier: RewardTier } | null>(null);
   const [achievementModalData, setAchievementModalData] = useState<{ student: Student; title?: AchievementTitleType } | null>(null);
+  const [parentReportModalData, setParentReportModalData] = useState<{
+    student: Student;
+    monthlyStats?: {
+      sessionsHeld: number;
+      presentCount: number;
+      attendanceRate: number;
+      monthlyPoints: number;
+      liturgyCount: number;
+      verseCount: number;
+      prayerCount: number;
+    };
+    monthNameArabic?: string;
+  } | null>(null);
 
   // Cloud Database synchronization states
   const [isCloudConnected, setIsCloudConnected] = useState(true);
@@ -578,6 +592,52 @@ export default function App() {
     setIsAddCompetitionOpen(true);
   };
 
+  // 10b. Open Parent WhatsApp Report Modal
+  const handleOpenParentReport = (
+    student: Student, 
+    monthlyStats?: {
+      sessionsHeld: number;
+      presentCount: number;
+      attendanceRate: number;
+      monthlyPoints: number;
+      liturgyCount: number;
+      verseCount: number;
+      prayerCount: number;
+    }, 
+    monthNameArabic?: string
+  ) => {
+    setParentReportModalData({
+      student,
+      monthlyStats,
+      monthNameArabic,
+    });
+  };
+
+  // 10c. Update Student Parent Phone
+  const handleUpdateStudentParentPhone = (studentId: string, parentPhone: string) => {
+    setAppState((prev) => {
+      let targetStudent: Student | null = null;
+      const updatedStudents = prev.students.map((s) => {
+        if (s.id !== studentId) return s;
+        const updated = { ...s, parentPhone };
+        targetStudent = updated;
+        return updated;
+      });
+
+      if (targetStudent) {
+        setCloudSyncing(true);
+        syncStudentToFirestore(targetStudent)
+          .catch((e) => console.warn('Firestore sync note:', e))
+          .finally(() => setCloudSyncing(false));
+      }
+
+      return {
+        ...prev,
+        students: updatedStudents,
+      };
+    });
+  };
+
   // 11. Bulk Import Students
   const handleImportStudents = (newStudents: Student[]) => {
     setAppState((prev) => ({
@@ -806,6 +866,7 @@ export default function App() {
                 serviceName={appState.serviceName}
                 onSelectStudent={(s) => setProfileStudent(s)}
                 onOpenAchievementCard={(s, t) => setAchievementModalData({ student: s, title: t })}
+                onOpenParentReport={handleOpenParentReport}
               />
             )}
 
@@ -830,6 +891,7 @@ export default function App() {
                   setIsAddStudentOpen(true);
                 }}
                 onOpenAchievementCard={(s, t) => setAchievementModalData({ student: s, title: t })}
+                onOpenParentReport={handleOpenParentReport}
               />
             )}
 
@@ -950,6 +1012,7 @@ export default function App() {
           }}
           onOpenAddBonusOrPenalty={(s, m) => handleOpenAddBonusOrPenalty(s, m)}
           onOpenAchievementCard={(s) => setAchievementModalData({ student: s, title: 'بطل الشهر' })}
+          onOpenParentReport={(s) => handleOpenParentReport(s)}
         />
       )}
 
@@ -978,6 +1041,23 @@ export default function App() {
           patronPriests={appState.patronPriests}
           initialTitle={achievementModalData.title || 'بطل الشهر'}
           onClose={() => setAchievementModalData(null)}
+        />
+      )}
+
+      {parentReportModalData && (
+        <ParentWhatsAppReportModal
+          isOpen={true}
+          onClose={() => setParentReportModalData(null)}
+          student={parentReportModalData.student}
+          sessions={appState.sessions}
+          pointsRules={appState.pointsRules}
+          rewardTiers={appState.rewardTiers}
+          competitionLogs={appState.competitionLogs}
+          churchName={appState.churchName}
+          serviceName={appState.serviceName}
+          monthlyStats={parentReportModalData.monthlyStats}
+          monthNameArabic={parentReportModalData.monthNameArabic}
+          onUpdateStudentPhone={handleUpdateStudentParentPhone}
         />
       )}
     </div>
