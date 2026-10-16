@@ -19,7 +19,8 @@ import {
   Database,
   Cloud,
   Bell,
-  Smartphone
+  Smartphone,
+  BookOpen
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -35,6 +36,7 @@ interface HeaderProps {
   onToggleNotifications?: () => void;
   canInstallPWA?: boolean;
   onOpenInstallPWA?: () => void;
+  onOpenGuide?: () => void;
   currentUser: CurrentUser;
   isCloudConnected?: boolean;
   cloudSyncing?: boolean;
@@ -59,6 +61,7 @@ export const Header: React.FC<HeaderProps> = ({
   onToggleNotifications,
   canInstallPWA = false,
   onOpenInstallPWA,
+  onOpenGuide,
   currentUser,
   isCloudConnected = false,
   cloudSyncing = false,
@@ -148,6 +151,19 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="hidden sm:inline">تثبيت التطبيق 📲</span>
               <span className="sm:hidden font-bold">تطبيق 📲</span>
               <span className="w-1.5 h-1.5 rounded-full bg-stone-950 animate-ping" />
+            </button>
+          )}
+
+          {/* Service Guide Button */}
+          {onOpenGuide && (
+            <button
+              onClick={onOpenGuide}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-amber-200 border border-amber-400/30 transition backdrop-blur-sm active:scale-95 cursor-pointer text-xs font-black shadow-xs"
+              title="دليل الخدمة الشامل (طريقة النقاط، الجوائز، وإرشادات الخدام والمخدومين)"
+            >
+              <BookOpen className="w-3.5 h-3.5 text-amber-300" />
+              <span className="hidden sm:inline">دليل الخدمة 📖</span>
+              <span className="sm:hidden font-bold">دليل 📖</span>
             </button>
           )}
 

@@ -34,6 +34,7 @@ import { NotificationsDropdown } from './components/NotificationsDropdown';
 import { ParentWhatsAppReportModal } from './components/ParentWhatsAppReportModal';
 import { PWAInstallBanner } from './components/PWAInstallBanner';
 import { OfflineIndicator } from './components/OfflineIndicator';
+import { ServiceGuideModal } from './components/ServiceGuideModal';
 import { usePWAInstall } from './hooks/usePWAInstall';
 import { getTodayBirthdays } from './utils/birthday';
 import { 
@@ -86,6 +87,10 @@ export default function App() {
   const { canInstall, isInstalled } = usePWAInstall();
   const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
 
+  // Service Guide Modal state
+  const [isGuideModalOpen, setIsGuideModalOpen] = useState(false);
+  const [guideModalTab, setGuideModalTab] = useState<'students' | 'servants'>('students');
+
   // Active session for attendance tracking
   const [currentSessionId, setCurrentSessionId] = useState<string>(() => {
     const sessions = appState.sessions;
@@ -136,17 +141,30 @@ export default function App() {
           let hasChanges = false;
 
           if (cloudData.students !== undefined && cloudData.students.length > 0) {
-            updated.students = cloudData.students;
+            // Merge cloud students with any local students added while offline
+            const cloudStudentIds = new Set(cloudData.students.map((s) => s.id));
+            const localOnlyStudents = prev.students.filter((s) => !cloudStudentIds.has(s.id));
+            updated.students = [...cloudData.students, ...localOnlyStudents];
             hasChanges = true;
           }
 
           if (cloudData.sessions !== undefined && cloudData.sessions.length > 0) {
-            updated.sessions = cloudData.sessions;
+            // Merge cloud sessions with any local sessions recorded while offline
+            const cloudSessionIds = new Set(cloudData.sessions.map((s) => s.id));
+            const localOnlySessions = prev.sessions.filter((s) => !cloudSessionIds.has(s.id));
+            const mergedSessions = [...cloudData.sessions, ...localOnlySessions];
+            mergedSessions.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+            updated.sessions = mergedSessions;
             hasChanges = true;
           }
 
           if (cloudData.competitions !== undefined && cloudData.competitions.length > 0) {
-            updated.competitionLogs = cloudData.competitions;
+            // Merge cloud competitions with any local logs added while offline
+            const cloudCompIds = new Set(cloudData.competitions.map((c) => c.id));
+            const localOnlyComps = prev.competitionLogs.filter((c) => !cloudCompIds.has(c.id));
+            const mergedComps = [...cloudData.competitions, ...localOnlyComps];
+            mergedComps.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+            updated.competitionLogs = mergedComps;
             hasChanges = true;
           }
 
@@ -176,6 +194,30 @@ export default function App() {
       unsubscribe();
     };
   }, []);
+
+  // Automatic Cloud Re-synchronization on Internet Restoration
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsCloudConnected(true);
+      setCloudSyncing(true);
+      // Synchronize full local state to Firestore so all offline edits are written to the cloud
+      uploadFullStateToFirestore(appState)
+        .catch((e) => console.warn('Offline reconnection auto-sync note:', e))
+        .finally(() => setCloudSyncing(false));
+    };
+
+    const handleOffline = () => {
+      setIsCloudConnected(false);
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [appState]);
 
   // Keep currentSessionId valid if sessions list changes
   useEffect(() => {
@@ -740,6 +782,10 @@ export default function App() {
         onToggleNotifications={() => setIsNotificationsOpen((prev) => !prev)}
         canInstallPWA={canInstall}
         onOpenInstallPWA={() => setIsInstallModalOpen(true)}
+        onOpenGuide={() => {
+          setGuideModalTab(currentUser?.type === 'servant' ? 'servants' : 'students');
+          setIsGuideModalOpen(true);
+        }}
         currentUser={currentUser}
         isCloudConnected={isCloudConnected}
         cloudSyncing={cloudSyncing}
@@ -1075,6 +1121,18 @@ export default function App() {
       <PWAInstallBanner 
         forceShow={isInstallModalOpen} 
         onClose={() => setIsInstallModalOpen(false)} 
+      />
+
+      {/* Service Guide and Platform Rules Modal */}
+      <ServiceGuideModal
+        isOpen={isGuideModalOpen}
+        onClose={() => setIsGuideModalOpen(false)}
+        churchName={appState.churchName}
+        serviceName={appState.serviceName}
+        patronPriests={appState.patronPriests}
+        rewardTiers={appState.rewardTiers}
+        pointsRules={appState.pointsRules}
+        initialTab={guideModalTab}
       />
 
       {/* Connectivity & Offline State Indicator */}
