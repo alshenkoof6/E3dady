@@ -25,6 +25,7 @@ import {
   sendTestNotification, 
   isNotificationSupported 
 } from '../utils/notifications';
+import { getWhatsAppUrl } from '../utils/phone';
 
 interface NotificationsDropdownProps {
   isOpen: boolean;
@@ -87,11 +88,9 @@ export const NotificationsDropdown: React.FC<NotificationsDropdownProps> = ({
     onMarkAsRead(notif.id);
 
     if (notif.actionType === 'whatsapp' && notif.studentPhone) {
-      const cleanPhone = notif.studentPhone.replace(/[^0-9]/g, '');
-      const greeting = encodeURIComponent(
-        `كل سنة وأنت طيب وبخير يا ${notif.studentName || 'بطل'}! 🎉🎂\nخدام وأسرة خدمة إعدادي بيباركو لك في عيد ميلادك، وبيتمنولك سنة سعيدة ومباركة مع بابا يسوع ✝️✨`
-      );
-      window.open(`https://wa.me/20${cleanPhone}?text=${greeting}`, '_blank');
+      const greeting = `كل سنة وأنت طيب وبخير يا ${notif.studentName || 'بطل'}! 🎉🎂\nخدام وأسرة خدمة إعدادي بيباركو لك في عيد ميلادك، وبيتمنولك سنة سعيدة ومباركة مع بابا يسوع ✝️✨\nمستنينك تفرح معانا في اللقاء القادم! ❤️`;
+      const url = getWhatsAppUrl(notif.studentPhone, greeting);
+      window.open(url, '_blank');
       return;
     }
 

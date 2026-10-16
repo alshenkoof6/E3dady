@@ -29,28 +29,13 @@ export interface ParentReportData {
   };
 }
 
+import { formatWhatsAppPhone } from './phone';
+
 /**
  * Normalizes phone numbers to standard international format for WhatsApp (e.g. 201xxxxxxxxx for Egypt)
  */
 export function normalizePhoneForWhatsApp(phone?: string): string {
-  if (!phone) return '';
-  const digits = phone.replace(/[^0-9]/g, '');
-  if (!digits) return '';
-
-  // Egyptian numbers: starts with 01xxxxxxxxx (11 digits) -> add 2 (201xxxxxxxxx)
-  if (digits.startsWith('01') && digits.length === 11) {
-    return '2' + digits;
-  }
-  // If starts with 1xxxxxxxxx (10 digits) -> add 20
-  if (digits.startsWith('1') && digits.length === 10) {
-    return '20' + digits;
-  }
-  // Already in 201xxxxxxxxx (12 digits)
-  if (digits.startsWith('201') && digits.length === 12) {
-    return digits;
-  }
-  // General fallback
-  return digits;
+  return formatWhatsAppPhone(phone);
 }
 
 /**

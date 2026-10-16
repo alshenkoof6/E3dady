@@ -28,6 +28,7 @@ import {
   Calendar
 } from 'lucide-react';
 import { isBirthdayToday, calculateAge, formatBirthDateArabic } from '../utils/birthday';
+import { getWhatsAppUrl, formatTelPhone } from '../utils/phone';
 
 interface StudentsViewProps {
   students: Student[];
@@ -393,14 +394,14 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
                 {student.phone ? (
                   <>
                     <a
-                      href={`tel:${student.phone}`}
+                      href={`tel:${formatTelPhone(student.phone)}`}
                       className="p-1.5 bg-slate-100 hover:bg-emerald-100 text-slate-600 hover:text-emerald-700 rounded-lg transition"
                       title={`اتصال: ${student.phone}`}
                     >
                       <Phone className="w-3.5 h-3.5" />
                     </a>
                     <a
-                      href={`https://wa.me/2${student.phone.replace(/^0/, '')}`}
+                      href={getWhatsAppUrl(student.phone)}
                       target="_blank"
                       rel="noreferrer"
                       className="p-1.5 bg-slate-100 hover:bg-emerald-100 text-slate-600 hover:text-emerald-700 rounded-lg transition"

@@ -29,6 +29,7 @@ import {
   PlusCircle
 } from 'lucide-react';
 import { isBirthdayToday, calculateAge, formatBirthDateArabic } from '../utils/birthday';
+import { getWhatsAppUrl, formatTelPhone } from '../utils/phone';
 
 interface StudentProfileModalProps {
   student: Student;
@@ -145,14 +146,14 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
             {student.phone && (
               <>
                 <a
-                  href={`tel:${student.phone}`}
+                  href={`tel:${formatTelPhone(student.phone)}`}
                   className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition flex items-center gap-1.5"
                 >
                   <Phone className="w-3.5 h-3.5" />
                   <span>اتصال</span>
                 </a>
                 <a
-                  href={`https://wa.me/2${student.phone.replace(/^0/, '')}`}
+                  href={getWhatsAppUrl(student.phone)}
                   target="_blank"
                   rel="noreferrer"
                   className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold rounded-xl transition flex items-center gap-1.5 border border-emerald-200"

@@ -18,7 +18,8 @@ import {
   LogOut,
   Database,
   Cloud,
-  Bell
+  Bell,
+  Smartphone
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -32,6 +33,8 @@ interface HeaderProps {
   unreadNotificationsCount?: number;
   isNotificationsOpen?: boolean;
   onToggleNotifications?: () => void;
+  canInstallPWA?: boolean;
+  onOpenInstallPWA?: () => void;
   currentUser: CurrentUser;
   isCloudConnected?: boolean;
   cloudSyncing?: boolean;
@@ -54,6 +57,8 @@ export const Header: React.FC<HeaderProps> = ({
   unreadNotificationsCount = 0,
   isNotificationsOpen = false,
   onToggleNotifications,
+  canInstallPWA = false,
+  onOpenInstallPWA,
   currentUser,
   isCloudConnected = false,
   cloudSyncing = false,
@@ -129,6 +134,20 @@ export const Header: React.FC<HeaderProps> = ({
                   {unreadNotificationsCount > 9 ? '+9' : unreadNotificationsCount}
                 </span>
               )}
+            </button>
+          )}
+
+          {/* PWA Install App Button */}
+          {onOpenInstallPWA && canInstallPWA && (
+            <button
+              onClick={onOpenInstallPWA}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-stone-950 font-black text-xs transition shadow-md shadow-amber-950/40 active:scale-95 cursor-pointer border border-amber-300"
+              title="تثبيت منصة الخدمة كتطبيق مستقل على هاتفك (بدون متجر وبكامل الشاشة)"
+            >
+              <Smartphone className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden sm:inline">تثبيت التطبيق 📲</span>
+              <span className="sm:hidden font-bold">تطبيق 📲</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-stone-950 animate-ping" />
             </button>
           )}
 

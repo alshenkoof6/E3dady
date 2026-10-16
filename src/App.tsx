@@ -32,6 +32,9 @@ import { AchievementCardModal, AchievementTitleType } from './components/Achieve
 import { BirthdayNotificationBanner } from './components/BirthdayNotificationBanner';
 import { NotificationsDropdown } from './components/NotificationsDropdown';
 import { ParentWhatsAppReportModal } from './components/ParentWhatsAppReportModal';
+import { PWAInstallBanner } from './components/PWAInstallBanner';
+import { OfflineIndicator } from './components/OfflineIndicator';
+import { usePWAInstall } from './hooks/usePWAInstall';
 import { getTodayBirthdays } from './utils/birthday';
 import { 
   generateAppNotifications, 
@@ -78,6 +81,10 @@ export default function App() {
   });
 
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+
+  // PWA Installation state and hook
+  const { canInstall, isInstalled } = usePWAInstall();
+  const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
 
   // Active session for attendance tracking
   const [currentSessionId, setCurrentSessionId] = useState<string>(() => {
@@ -731,6 +738,8 @@ export default function App() {
         unreadNotificationsCount={unreadNotificationsCount}
         isNotificationsOpen={isNotificationsOpen}
         onToggleNotifications={() => setIsNotificationsOpen((prev) => !prev)}
+        canInstallPWA={canInstall}
+        onOpenInstallPWA={() => setIsInstallModalOpen(true)}
         currentUser={currentUser}
         isCloudConnected={isCloudConnected}
         cloudSyncing={cloudSyncing}
@@ -915,6 +924,7 @@ export default function App() {
                     await uploadFullStateToFirestore(appState);
                     setCloudSyncing(false);
                   }}
+                  onOpenInstallPWA={() => setIsInstallModalOpen(true)}
                 />
               ) : (
                 <div className="bg-white rounded-3xl border border-slate-200 p-8 sm:p-12 text-center max-w-lg mx-auto my-8 shadow-sm">
@@ -1060,6 +1070,15 @@ export default function App() {
           onUpdateStudentPhone={handleUpdateStudentParentPhone}
         />
       )}
+
+      {/* PWA Mobile Installation Prompt & Modal */}
+      <PWAInstallBanner 
+        forceShow={isInstallModalOpen} 
+        onClose={() => setIsInstallModalOpen(false)} 
+      />
+
+      {/* Connectivity & Offline State Indicator */}
+      <OfflineIndicator />
     </div>
   );
 }

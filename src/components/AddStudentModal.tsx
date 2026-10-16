@@ -13,6 +13,7 @@ import {
   Sparkles,
   Link as LinkIcon
 } from 'lucide-react';
+import { convertArabicToEnglishDigits } from '../utils/phone';
 
 interface AddStudentModalProps {
   initialStudent?: Student | null;
@@ -109,8 +110,8 @@ export const AddStudentModal: React.FC<AddStudentModalProps> = ({
       family: targetFamily,
       ...(birthDate.trim() ? { birthDate: birthDate.trim() } : {}),
       ...(photoUrl.trim() ? { photoUrl: photoUrl.trim() } : {}),
-      ...(phone.trim() ? { phone: phone.trim() } : {}),
-      ...(parentPhone.trim() ? { parentPhone: parentPhone.trim() } : {}),
+      ...(phone.trim() ? { phone: convertArabicToEnglishDigits(phone.trim()).replace(/[^0-9+]/g, '') } : {}),
+      ...(parentPhone.trim() ? { parentPhone: convertArabicToEnglishDigits(parentPhone.trim()).replace(/[^0-9+]/g, '') } : {}),
       ...(notes.trim() ? { notes: notes.trim() } : {}),
       rewardsClaimed: initialStudent?.rewardsClaimed || [],
     };

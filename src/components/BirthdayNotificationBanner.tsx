@@ -12,6 +12,7 @@ import {
   Heart,
   PartyPopper
 } from 'lucide-react';
+import { getWhatsAppUrl, formatTelPhone } from '../utils/phone';
 
 interface BirthdayNotificationBannerProps {
   birthdayStudents: Student[];
@@ -92,9 +93,10 @@ export const BirthdayNotificationBanner: React.FC<BirthdayNotificationBannerProp
           <div className="mt-4 pt-4 border-t border-slate-100 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {birthdayStudents.map((std) => {
               const age = calculateAge(std.birthDate);
-              const defaultGreeting = encodeURIComponent(
-                `كل سنة وأنت طيب وبخير يا ${std.name}! 🎉🎂\nخدام وأسرة خدمة إعدادي بيباركو لك في عيد ميلادك، وبيتمنولك سنة سعيدة ومباركة كلها نجاح مع بابا يسوع ✝️✨\nمستنينك تفرح معانا في اللقاء القادم! ❤️`
-              );
+              const rawGreeting = `كل سنة وأنت طيب وبخير يا ${std.name}! 🎉🎂\nخدام وأسرة خدمة إعدادي بيباركو لك في عيد ميلادك، وبيتمنولك سنة سعيدة ومباركة كلها نجاح مع بابا يسوع ✝️✨\nمستنينك تفرح معانا في اللقاء القادم! ❤️`;
+              const parentGreeting = `سلام ونعمة يا فندم 🌸\nخدام وأسرة خدمة إعدادي بيهنوا حضرتك والأسرة الكريمة بمناسبة عيد ميلاد حبيبنا ${std.name}! 🎉🎂\nكل سنة وهو طيب ومبارك وفي حضن الكنيسة دايماً، وتفرحوا بيه في كل سنين حياته يا رب! ✨❤️`;
+
+              const whatsappUrl = std.phone ? getWhatsAppUrl(std.phone, rawGreeting) : getWhatsAppUrl(std.parentPhone, parentGreeting);
 
               return (
                 <div
@@ -152,7 +154,7 @@ export const BirthdayNotificationBanner: React.FC<BirthdayNotificationBannerProp
                     {std.phone ? (
                       <>
                         <a
-                          href={`https://wa.me/2${std.phone.replace(/^0/, '')}?text=${defaultGreeting}`}
+                          href={whatsappUrl}
                           target="_blank"
                           rel="noreferrer"
                           className="flex-1 py-1.5 px-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-xs"
@@ -163,7 +165,7 @@ export const BirthdayNotificationBanner: React.FC<BirthdayNotificationBannerProp
                         </a>
 
                         <a
-                          href={`tel:${std.phone}`}
+                          href={`tel:${formatTelPhone(std.phone)}`}
                           className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition"
                           title={`اتصال: ${std.phone}`}
                         >
@@ -173,7 +175,7 @@ export const BirthdayNotificationBanner: React.FC<BirthdayNotificationBannerProp
                     ) : std.parentPhone ? (
                       <>
                         <a
-                          href={`https://wa.me/2${std.parentPhone.replace(/^0/, '')}?text=${defaultGreeting}`}
+                          href={whatsappUrl}
                           target="_blank"
                           rel="noreferrer"
                           className="flex-1 py-1.5 px-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-xs"
@@ -183,7 +185,7 @@ export const BirthdayNotificationBanner: React.FC<BirthdayNotificationBannerProp
                           <span>تهنئة ولي الأمر</span>
                         </a>
                         <a
-                          href={`tel:${std.parentPhone}`}
+                          href={`tel:${formatTelPhone(std.parentPhone)}`}
                           className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition"
                           title={`اتصال بولي الأمر: ${std.parentPhone}`}
                         >

@@ -38,6 +38,7 @@ import {
   BarChart3,
   UserCheck
 } from 'lucide-react';
+import { getWhatsAppUrl, formatTelPhone } from '../utils/phone';
 
 interface MonthlyReportsViewProps {
   students: Student[];
@@ -508,14 +509,14 @@ export const MonthlyReportsView: React.FC<MonthlyReportsViewProps> = ({
                     {item.student.phone && (
                       <>
                         <a
-                          href={`tel:${item.student.phone}`}
+                          href={`tel:${formatTelPhone(item.student.phone)}`}
                           className="p-1.5 bg-white text-slate-700 hover:text-emerald-700 border border-slate-200 rounded-lg transition"
                           title={`اتصال: ${item.student.phone}`}
                         >
                           <Phone className="w-3.5 h-3.5" />
                         </a>
                         <a
-                          href={`https://wa.me/2${item.student.phone.replace(/^0/, '')}`}
+                          href={getWhatsAppUrl(item.student.phone)}
                           target="_blank"
                           rel="noreferrer"
                           className="p-1.5 bg-emerald-500 text-white rounded-lg transition hover:bg-emerald-600"
